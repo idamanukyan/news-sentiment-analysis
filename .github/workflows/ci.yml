@@ -27,6 +27,16 @@ jobs:
           --health-timeout 5s
           --health-retries 5
 
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -45,11 +55,14 @@ jobs:
         run: ./gradlew test
         working-directory: backend
         env:
+          SPRING_PROFILES_ACTIVE: test
           DB_HOST: localhost
           DB_PORT: 5432
           DB_NAME: newssentiment_test
           DB_USER: postgres
           DB_PASSWORD: postgres
+          REDIS_HOST: localhost
+          REDIS_PORT: 6379
 
       - name: Upload test results
         uses: actions/upload-artifact@v4
