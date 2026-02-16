@@ -5,6 +5,7 @@ from apscheduler.triggers.interval import IntervalTrigger
 from .config import get_settings
 from .sources.rss_fetcher import fetch_all_rss_sources
 from .sentiment.analyzer import process_unanalyzed_articles
+from .services.topic_search import fetch_all_topics
 
 # Configure structured logging
 structlog.configure(
@@ -45,12 +46,22 @@ def run_sentiment_job():
         logger.error("sentiment_job_error", error=str(e))
 
 
+def run_topic_search_job():
+    """Job to search global news for user-defined topics."""
+    logger.info("starting_topic_search_job")
+    try:
+        fetch_all_topics()
+    except Exception as e:
+        logger.error("topic_search_job_error", error=str(e))
+
+
 def main():
     """Main entry point for the scraper service."""
     logger.info("starting_scraper_service", interval=settings.scrape_interval_minutes)
 
     # Run immediately on startup
     run_fetch_job()
+    run_topic_search_job()
     run_sentiment_job()
 
     # Schedule periodic jobs
@@ -61,6 +72,13 @@ def main():
         IntervalTrigger(minutes=settings.scrape_interval_minutes),
         id="fetch_job",
         name="Fetch articles from sources"
+    )
+
+    scheduler.add_job(
+        run_topic_search_job,
+        IntervalTrigger(minutes=60),  # Hourly for global search
+        id="topic_search_job",
+        name="Search global news for topics"
     )
 
     scheduler.add_job(

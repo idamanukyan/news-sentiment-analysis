@@ -24,8 +24,12 @@ public class Article {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "source_id", nullable = false)
+    @JoinColumn(name = "source_id")
     private Source source;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "topic_id")
+    private Topic topic;
 
     @Column(name = "external_id", length = 500)
     private String externalId;

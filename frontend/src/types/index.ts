@@ -35,6 +35,10 @@ export interface Topic {
   keywords: string[]
   sourceIds?: number[]
   createdAt: string
+  globalSearch?: boolean
+  language?: string
+  searchIntervalMinutes?: number
+  lastSearchedAt?: string
 }
 
 export interface Alert {

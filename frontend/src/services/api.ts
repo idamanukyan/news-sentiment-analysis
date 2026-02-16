@@ -68,10 +68,20 @@ export const sourcesApi = {
 // Topics endpoints
 export const topicsApi = {
   getAll: () => api.get('/topics'),
-  create: (data: { name: string; keywords: string[]; sourceIds?: number[] }) =>
-    api.post('/topics', data),
-  update: (id: number, data: { name: string; keywords: string[]; sourceIds?: number[] }) =>
-    api.put(`/topics/${id}`, data),
+  create: (data: {
+    name: string
+    keywords: string[]
+    sourceIds?: number[]
+    globalSearch?: boolean
+    language?: string
+  }) => api.post('/topics', data),
+  update: (id: number, data: {
+    name: string
+    keywords: string[]
+    sourceIds?: number[]
+    globalSearch?: boolean
+    language?: string
+  }) => api.put(`/topics/${id}`, data),
   delete: (id: number) => api.delete(`/topics/${id}`),
 }
 

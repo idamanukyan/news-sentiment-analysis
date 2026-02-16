@@ -16,6 +16,9 @@ class Settings(BaseSettings):
     # OpenAI (fallback)
     openai_api_key: str = ""
 
+    # NewsAPI.org for global news search
+    newsapi_key: str = ""
+
     # Scraping
     scrape_interval_minutes: int = 15
     max_articles_per_source: int = 50

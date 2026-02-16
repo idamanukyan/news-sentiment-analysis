@@ -39,4 +39,17 @@ public class Topic {
     @Builder.Default
     @Column(nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
+
+    // Global search settings
+    @Builder.Default
+    private Boolean globalSearch = false;
+
+    @Builder.Default
+    @Column(length = 10)
+    private String language = "en";
+
+    @Builder.Default
+    private Integer searchIntervalMinutes = 60;
+
+    private Instant lastSearchedAt;
 }
