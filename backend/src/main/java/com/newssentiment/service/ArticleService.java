@@ -4,6 +4,7 @@ import com.newssentiment.dto.ArticleDTO;
 import com.newssentiment.dto.ArticleFilterRequest;
 import com.newssentiment.model.Article;
 import com.newssentiment.repository.ArticleRepository;
+import com.newssentiment.repository.ArticleSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,11 +24,9 @@ public class ArticleService {
 
     @Transactional(readOnly = true)
     public Page<ArticleDTO> findWithFilters(ArticleFilterRequest filter, Pageable pageable) {
-        Page<Article> articles = articleRepository.findWithFilters(
-                filter.sourceId(),
-                filter.sentiment(),
-                filter.from(),
-                filter.to(),
+        // Use JPA Specification for flexible filtering with null handling
+        Page<Article> articles = articleRepository.findAll(
+                ArticleSpecification.withFilters(filter),
                 pageable
         );
         return articles.map(this::toDTO);
@@ -64,12 +63,40 @@ public class ArticleService {
         }
     }
 
-    private ArticleDTO toDTO(Article article) {
+    public ArticleDTO toDTO(Article article) {
+        // Original content snippet
+        String snippet = null;
+        if (article.getContent() != null) {
+            snippet = article.getContent().length() > 200
+                    ? article.getContent().substring(0, 200) + "..."
+                    : article.getContent();
+        }
+
+        // English content snippet (if available)
+        String snippetEn = null;
+        if (article.getContentEn() != null) {
+            snippetEn = article.getContentEn().length() > 200
+                    ? article.getContentEn().substring(0, 200) + "..."
+                    : article.getContentEn();
+        }
+
         return new ArticleDTO(
                 article.getId(),
-                article.getSource().getId(),
-                article.getSource().getName(),
+                article.getSource() != null ? article.getSource().getId() : null,
+                article.getSource() != null ? article.getSource().getName() : "Global News",
+                article.getSource() != null && article.getSource().getType() != null ? article.getSource().getType().name() : null,
+                article.getSource() != null && article.getSource().getLanguage() != null ? article.getSource().getLanguage().name() : null,
+                article.getTopic() != null ? article.getTopic().getId() : null,
+                article.getTopic() != null ? article.getTopic().getName() : null,
+                article.getNarrative() != null ? article.getNarrative().getId() : null,
+                article.getNarrative() != null ? article.getNarrative().getName() : null,
                 article.getTitle(),
+                article.getTitleEn(),
+                snippet,
+                snippetEn,
+                article.getDetectedLanguage(),
+                article.getLlmTopic(),
+                article.getLlmKeywords() != null ? java.util.Arrays.asList(article.getLlmKeywords()) : null,
                 article.getUrl(),
                 article.getAuthor(),
                 article.getPublishedAt(),

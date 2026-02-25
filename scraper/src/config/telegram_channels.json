@@ -1,0 +1,107 @@
+{
+  "channels": [
+    {
+      "username": "armenaborig",
+      "name": "Armenpress",
+      "category": "news",
+      "language": "hy",
+      "priority": "high"
+    },
+    {
+      "username": "newsaborig",
+      "name": "News.am",
+      "category": "news",
+      "language": "hy",
+      "priority": "high"
+    },
+    {
+      "username": "azaborig",
+      "name": "Azatutyun",
+      "category": "news",
+      "language": "hy",
+      "priority": "high"
+    },
+    {
+      "username": "civilnetam",
+      "name": "CivilNet",
+      "category": "news",
+      "language": "hy",
+      "priority": "high"
+    },
+    {
+      "username": "hetaborig",
+      "name": "Hetq",
+      "category": "investigative",
+      "language": "hy",
+      "priority": "high"
+    },
+    {
+      "username": "factortvam",
+      "name": "Factor TV",
+      "category": "news",
+      "language": "hy",
+      "priority": "medium"
+    },
+    {
+      "username": "a1aborig",
+      "name": "A1plus",
+      "category": "news",
+      "language": "hy",
+      "priority": "high"
+    },
+    {
+      "username": "pastinfo",
+      "name": "Pastinfo",
+      "category": "news",
+      "language": "hy",
+      "priority": "medium"
+    },
+    {
+      "username": "SputnikArmenia",
+      "name": "Sputnik Armenia",
+      "category": "news",
+      "language": "ru",
+      "priority": "medium"
+    },
+    {
+      "username": "tertaborig",
+      "name": "Tert.am",
+      "category": "news",
+      "language": "hy",
+      "priority": "high"
+    },
+    {
+      "username": "ArmenianUnifiedInfoCenter",
+      "name": "Armenian Unified Infocenter",
+      "category": "political",
+      "language": "hy",
+      "priority": "high"
+    },
+    {
+      "username": "boon_am",
+      "name": "Boon.am",
+      "category": "analytical",
+      "language": "hy",
+      "priority": "medium"
+    },
+    {
+      "username": "armtimes",
+      "name": "ArmTimes",
+      "category": "news",
+      "language": "hy",
+      "priority": "medium"
+    },
+    {
+      "username": "mediaport_am",
+      "name": "Mediaport.am",
+      "category": "analytical",
+      "language": "hy",
+      "priority": "medium"
+    }
+  ],
+  "settings": {
+    "fetch_limit": 200,
+    "fetch_interval_minutes": 30,
+    "message_age_limit_days": 7
+  }
+}

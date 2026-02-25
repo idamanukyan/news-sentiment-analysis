@@ -36,4 +36,7 @@ public interface SentimentResultRepository extends JpaRepository<SentimentResult
     List<Object[]> countByDayAndSentimentBetween(
             @Param("from") Instant from,
             @Param("to") Instant to);
+
+    @Query("SELECT sr.sentiment, COUNT(sr) FROM SentimentResult sr GROUP BY sr.sentiment")
+    List<Object[]> countBySentiment();
 }

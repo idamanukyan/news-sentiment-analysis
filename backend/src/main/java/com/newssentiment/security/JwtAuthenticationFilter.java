@@ -54,12 +54,25 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     );
                     authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authToken);
+
+                    // Set organization context from JWT claims
+                    Long orgId = jwtService.extractOrganizationId(jwt);
+                    String orgSlug = jwtService.extractOrganizationSlug(jwt);
+                    String orgName = jwtService.extractOrganizationName(jwt);
+                    if (orgId != null) {
+                        OrganizationContext.setCurrentOrganization(orgId, orgSlug, orgName);
+                    }
                 }
             }
         } catch (Exception e) {
             logger.error("Cannot set user authentication", e);
         }
 
-        filterChain.doFilter(request, response);
+        try {
+            filterChain.doFilter(request, response);
+        } finally {
+            // Always clear organization context after request completes
+            OrganizationContext.clear();
+        }
     }
 }

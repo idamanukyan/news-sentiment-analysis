@@ -185,6 +185,7 @@ def convert_newsapi_to_article(
 
     return Article(
         source_id=None,  # No local source for global articles
+        topic_id=topic_id,
         external_id=newsapi_article.get("url"),  # Use URL as external ID
         title=newsapi_article.get("title", "Untitled"),
         content=content,

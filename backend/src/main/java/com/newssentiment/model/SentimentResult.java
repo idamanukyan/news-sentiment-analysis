@@ -44,7 +44,7 @@ public class SentimentResult {
 
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(columnDefinition = "TEXT[]")
-    private List<String> topics;
+    private String[] topics;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(columnDefinition = "jsonb")

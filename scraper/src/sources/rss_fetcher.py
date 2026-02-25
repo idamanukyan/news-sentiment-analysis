@@ -1,6 +1,7 @@
 import feedparser
 import hashlib
 import structlog
+import urllib.request
 from datetime import datetime, timezone
 from typing import List, Optional
 from time import mktime
@@ -9,6 +10,9 @@ from ..models import Source, Article
 from ..database import get_db
 
 logger = structlog.get_logger()
+
+# Custom User-Agent to avoid being blocked by news sites
+USER_AGENT = "Mozilla/5.0 (compatible; AIIM-NewsBot/1.0; +https://aiim.am)"
 
 
 def parse_published_date(entry) -> Optional[datetime]:
@@ -30,7 +34,12 @@ def fetch_rss_source_by_data(source_id: int, source_name: str, source_url: str) 
     logger.info("fetching_rss", source_name=source_name, url=source_url)
 
     try:
-        feed = feedparser.parse(source_url)
+        # Use custom User-Agent to avoid being blocked
+        feed = feedparser.parse(
+            source_url,
+            agent=USER_AGENT,
+            request_headers={"Accept": "application/rss+xml, application/xml, text/xml, */*"}
+        )
 
         if feed.bozo and feed.bozo_exception:
             logger.warning("rss_parse_warning", source=source_name, error=str(feed.bozo_exception))

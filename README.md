@@ -1,6 +1,6 @@
-# News Sentiment Analysis Platform
+# AIIM - Armenia Information Integrity Monitor
 
-A multilingual news sentiment analysis platform for Armenian, Russian, and English media, focused on election monitoring and disinformation detection.
+A comprehensive election monitoring and disinformation detection platform for Armenia 2026 elections. Tracks narratives, analyzes sentiment, and provides real-time threat alerts across Armenian, Russian, and English media sources.
 
 ## Architecture
 
@@ -28,6 +28,26 @@ A multilingual news sentiment analysis platform for Armenian, Russian, and Engli
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+## Key Features
+
+- **Election Dashboard**: Real-time monitoring of election-related narratives and threats
+- **Narrative Tracking**: Detect and track disinformation campaigns with keyword matching
+- **Threat Alerts**: Automated alerts for volume spikes, coordinated attacks, and viral content
+- **Sentiment Analysis**: AI-powered sentiment analysis using Claude API
+- **Multi-source Ingestion**: RSS feeds, Telegram channels, and web scraping
+- **Role-Based Access**: VIEWER, ANALYST, and ADMIN roles with granular permissions
+- **Multilingual Support**: Armenian, Russian, and English content analysis
+
+## Demo Accounts
+
+| Email | Password | Role | Permissions |
+|-------|----------|------|-------------|
+| `demo@aiim.am` | `AiimDemo2026` | ADMIN | Full access to all features |
+| `analyst@aiim.am` | `testpass123` | ANALYST | Create/edit narratives, manage alerts |
+| `viewer@aiim.am` | `testpass123` | VIEWER | Read-only dashboard access |
+
+**For demo presentations, use:** `demo@aiim.am` / `AiimDemo2026`
 
 ## Tech Stack
 
@@ -167,21 +187,45 @@ news-analysis/
 - `POST /api/v1/auth/login` - Login and get JWT token
 
 ### Articles
-- `GET /api/v1/articles` - List articles with filters
+- `GET /api/v1/articles` - List articles with filters (sentiment, source, date range, search)
 - `GET /api/v1/articles/{id}` - Get article by ID
+
+### Narratives (Requires ANALYST/ADMIN role for mutations)
+- `GET /api/v1/narratives` - List all narratives with pagination
+- `GET /api/v1/narratives/active` - List active narratives
+- `GET /api/v1/narratives/{id}` - Get narrative details
+- `POST /api/v1/narratives` - Create new narrative
+- `PUT /api/v1/narratives/{id}/status` - Update narrative status
+- `PUT /api/v1/narratives/{id}/threat-level` - Update threat level
+- `DELETE /api/v1/narratives/{id}` - Delete narrative (ADMIN only)
+
+### Threat Alerts (Requires ANALYST/ADMIN role for mutations)
+- `GET /api/v1/alerts` - List alerts with filters
+- `GET /api/v1/alerts/active` - List active alerts
+- `GET /api/v1/alerts/{id}` - Get alert details
+- `PUT /api/v1/alerts/{id}/acknowledge` - Acknowledge alert
+- `PUT /api/v1/alerts/{id}/resolve` - Resolve alert
+- `PUT /api/v1/alerts/{id}/dismiss` - Dismiss alert
+
+### Sources (Requires ADMIN role for mutations)
+- `GET /api/v1/sources` - List news sources
+- `GET /api/v1/sources/overview` - Get source statistics
+- `POST /api/v1/sources` - Add new source
+- `PUT /api/v1/sources/{id}` - Update source
+- `DELETE /api/v1/sources/{id}` - Delete source
+
+### Dashboard
+- `GET /api/v1/dashboard/election` - Election monitoring dashboard data
+- `GET /api/v1/dashboard/stats` - Overall statistics
 
 ### Sentiment
 - `GET /api/v1/sentiment/aggregate` - Aggregated sentiment by day/source
 - `GET /api/v1/sentiment/summary` - Overall sentiment counts
 
-### Sources
-- `GET /api/v1/sources` - List news sources
-- `GET /api/v1/sources/{id}` - Get source by ID
-
-### Topics
-- `GET /api/v1/topics` - List user's topics
-- `POST /api/v1/topics` - Create topic
-- `DELETE /api/v1/topics/{id}` - Delete topic
+### System Health
+- `GET /api/v1/system/health` - Application health status
+- `GET /api/v1/system/status` - Detailed system status
+- `GET /actuator/health` - Spring Actuator health endpoint
 
 ## Configuration
 
@@ -229,29 +273,113 @@ cd scraper && pytest tests/
 
 ## Deployment
 
-### Using Docker
+### Production Deployment
 
+1. **Configure environment:**
 ```bash
-# Build images
-docker-compose build
-
-# Push to registry
-docker-compose push
-
-# Deploy with production config
-docker-compose -f docker-compose.prod.yml up -d
+cp .env.production.example .env.production
+# Edit .env.production with production values
 ```
 
-### CI/CD
+2. **Deploy with Docker Compose:**
+```bash
+# Build production images
+docker-compose -f docker-compose.prod.yml build
 
-- **CI**: Runs on every push/PR to main
-- **Deploy**: Triggered by version tags (v1.0.0)
+# Start services
+docker-compose -f docker-compose.prod.yml up -d
 
-Create a release:
+# Initialize database (first time only)
+docker-compose exec postgres psql -U postgres -f /docker-entrypoint-initdb.d/init.sql
+```
+
+3. **Verify deployment:**
+```bash
+# Check health
+curl http://localhost/actuator/health
+
+# Check frontend
+curl http://localhost/
+```
+
+### Production Configuration
+
+| Component | Configuration |
+|-----------|--------------|
+| **Nginx** | SSL termination, rate limiting (10 req/s), gzip compression |
+| **Backend** | Connection pooling (10-50 connections), request compression |
+| **Database** | Optimized indexes, connection limits |
+| **Redis** | Session caching, rate limit storage |
+
+### CI/CD Pipeline
+
+The GitHub Actions pipeline (`.github/workflows/ci.yml`) includes:
+
+| Stage | Description |
+|-------|-------------|
+| `backend-test` | JUnit tests with PostgreSQL |
+| `frontend-test` | Vitest tests with coverage |
+| `backend-build` | Build JAR artifact |
+| `frontend-build` | Build production bundle |
+| `docker-build` | Build Docker images (main branch) |
+| `security-scan` | Trivy vulnerability scanning |
+
+**Create a release:**
 ```bash
 git tag v1.0.0
 git push origin v1.0.0
 ```
+
+## Monitoring
+
+### Health Endpoints
+
+- `/actuator/health` - Overall health status
+- `/actuator/health/liveness` - Kubernetes liveness probe
+- `/actuator/health/readiness` - Kubernetes readiness probe
+- `/api/v1/system/status` - Detailed system status
+
+### Logging
+
+Logs are written to stdout in JSON format for production. Configure log aggregation with:
+
+```yaml
+# docker-compose.prod.yml
+logging:
+  driver: "json-file"
+  options:
+    max-size: "10m"
+    max-file: "3"
+```
+
+### Metrics
+
+Spring Actuator exposes Prometheus metrics at `/actuator/prometheus` (when enabled).
+
+## Security
+
+### Authentication
+
+- JWT tokens with 24-hour expiration
+- Passwords hashed with BCrypt
+- Role-based access control (RBAC)
+
+### API Security
+
+- Rate limiting: 10 requests/second per IP
+- CORS configured for allowed origins
+- Security headers (X-Frame-Options, X-Content-Type-Options, etc.)
+- Input validation on all endpoints
+
+### Production Checklist
+
+- [ ] Change default JWT secret
+- [ ] Set strong database passwords
+- [ ] Enable SSL/TLS
+- [ ] Configure firewall rules
+- [ ] Set up log aggregation
+- [ ] Configure backup strategy
+- [ ] Enable monitoring alerts
 
 ## License
 

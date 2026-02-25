@@ -72,6 +72,12 @@ services:
       - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
       - NEWSAPI_KEY=${NEWSAPI_KEY:-}
       - SCRAPE_INTERVAL_MINUTES=15
+      - TELEGRAM_API_ID=${TELEGRAM_API_ID:-}
+      - TELEGRAM_API_HASH=${TELEGRAM_API_HASH:-}
+      - TELEGRAM_PHONE=${TELEGRAM_PHONE:-}
+      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
+    volumes:
+      - ./scraper/telegram_session:/app/telegram_session
     depends_on:
       postgres:
         condition: service_healthy

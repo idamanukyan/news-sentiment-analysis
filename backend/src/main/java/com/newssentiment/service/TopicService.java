@@ -29,8 +29,8 @@ public class TopicService {
         Topic topic = Topic.builder()
                 .user(user)
                 .name(name)
-                .keywords(keywords)
-                .sourceIds(sourceIds)
+                .keywords(keywords != null ? keywords.toArray(new String[0]) : null)
+                .sourceIds(sourceIds != null ? sourceIds.toArray(new Long[0]) : null)
                 .globalSearch(globalSearch != null ? globalSearch : false)
                 .language(language != null ? language : "en")
                 .build();
@@ -43,8 +43,8 @@ public class TopicService {
         return topicRepository.findByIdAndUser(id, user)
                 .map(topic -> {
                     topic.setName(name);
-                    topic.setKeywords(keywords);
-                    topic.setSourceIds(sourceIds);
+                    topic.setKeywords(keywords != null ? keywords.toArray(new String[0]) : null);
+                    topic.setSourceIds(sourceIds != null ? sourceIds.toArray(new Long[0]) : null);
                     if (globalSearch != null) {
                         topic.setGlobalSearch(globalSearch);
                     }

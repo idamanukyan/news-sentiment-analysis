@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" width="1920" height="1080">
+  <defs>
+    <!-- Main background gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a;stop-opacity:1" />
+      <stop offset="40%" style="stop-color:#1e293b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0f172a;stop-opacity:1" />
+    </linearGradient>
+    
+    <!-- Subtle accent glow -->
+    <radialGradient id="glowBlue" cx="80%" cy="30%" r="40%">
+      <stop offset="0%" style="stop-color:#2563eb;stop-opacity:0.08" />
+      <stop offset="100%" style="stop-color:#2563eb;stop-opacity:0" />
+    </radialGradient>
+    
+    <radialGradient id="glowAmber" cx="20%" cy="70%" r="30%">
+      <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:0.05" />
+      <stop offset="100%" style="stop-color:#f59e0b;stop-opacity:0" />
+    </radialGradient>
+
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e3a5f;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2563eb;stop-opacity:1" />
+    </linearGradient>
+
+    <linearGradient id="lineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#2563eb;stop-opacity:0" />
+      <stop offset="50%" style="stop-color:#2563eb;stop-opacity:0.15" />
+      <stop offset="100%" style="stop-color:#2563eb;stop-opacity:0" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Dark background -->
+  <rect width="1920" height="1080" fill="url(#bgGrad)"/>
+  
+  <!-- Subtle glow effects -->
+  <rect width="1920" height="1080" fill="url(#glowBlue)"/>
+  <rect width="1920" height="1080" fill="url(#glowAmber)"/>
+  
+  <!-- Very subtle grid pattern -->
+  <g opacity="0.03">
+    <line x1="0" y1="0" x2="0" y2="1080" stroke="#ffffff" stroke-width="1"/>
+    <line x1="120" y1="0" x2="120" y2="1080" stroke="#ffffff" stroke-width="1"/>
+    <line x1="240" y1="0" x2="240" y2="1080" stroke="#ffffff" stroke-width="1"/>
+    <line x1="360" y1="0" x2="360" y2="1080" stroke="#ffffff" stroke-width="1"/>
+    <line x1="480" y1="0" x2="480" y2="1080" stroke="#ffffff" stroke-width="1"/>
+    <line x1="600" y1="0" x2="600" y2="1080" stroke="#ffffff" stroke-width="1"/>
+    <line x1="720" y1="0" x2="720" y2="1080" stroke="#ffffff" stroke-width="1"/>
+    <line x1="840" y1="0" x2="840" y2="1080" stroke="#ffffff" stroke-width="1"/>
+    <line x1="960" y1="0" x2="960" y2="1080" stroke="#ffffff" stroke-width="1"/>
+    <line x1="1080" y1="0" x2="1080" y2="1080" stroke="#ffffff" stroke-width="1"/>
+    <line x1="1200" y1="0" x2="1200" y2="1080" stroke="#ffffff" stroke-width="1"/>
+    <line x1="1320" y1="0" x2="1320" y2="1080" stroke="#ffffff" stroke-width="1"/>
+    <line x1="1440" y1="0" x2="1440" y2="1080" stroke="#ffffff" stroke-width="1"/>
+    <line x1="1560" y1="0" x2="1560" y2="1080" stroke="#ffffff" stroke-width="1"/>
+    <line x1="1680" y1="0" x2="1680" y2="1080" stroke="#ffffff" stroke-width="1"/>
+    <line x1="1800" y1="0" x2="1800" y2="1080" stroke="#ffffff" stroke-width="1"/>
+    <line x1="1920" y1="0" x2="1920" y2="1080" stroke="#ffffff" stroke-width="1"/>
+    
+    <line x1="0" y1="120" x2="1920" y2="120" stroke="#ffffff" stroke-width="1"/>
+    <line x1="0" y1="240" x2="1920" y2="240" stroke="#ffffff" stroke-width="1"/>
+    <line x1="0" y1="360" x2="1920" y2="360" stroke="#ffffff" stroke-width="1"/>
+    <line x1="0" y1="480" x2="1920" y2="480" stroke="#ffffff" stroke-width="1"/>
+    <line x1="0" y1="600" x2="1920" y2="600" stroke="#ffffff" stroke-width="1"/>
+    <line x1="0" y1="720" x2="1920" y2="720" stroke="#ffffff" stroke-width="1"/>
+    <line x1="0" y1="840" x2="1920" y2="840" stroke="#ffffff" stroke-width="1"/>
+    <line x1="0" y1="960" x2="1920" y2="960" stroke="#ffffff" stroke-width="1"/>
+  </g>
+
+  <!-- Decorative data visualization lines (very subtle) -->
+  <g opacity="0.06">
+    <!-- Top-right area - signal line -->
+    <polyline points="1300,180 1380,160 1440,200 1520,140 1600,170 1680,120 1760,150 1840,100" 
+              stroke="#2563eb" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    <!-- Bottom-left area - signal line -->
+    <polyline points="80,850 160,830 240,870 320,810 400,840 480,790 560,820 640,780" 
+              stroke="#f59e0b" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Horizontal accent line across middle-bottom -->
+  <rect x="0" y="920" width="1920" height="1" fill="url(#lineGrad)"/>
+  
+  <!-- AIIM Logo - bottom right corner, subtle -->
+  <g transform="translate(1580, 950)" opacity="0.7">
+    <!-- Small shield icon -->
+    <path d="M40 5 L70 17 L70 43 Q70 62 40 72 Q10 62 10 43 L10 17 Z" 
+          fill="url(#brandGrad)" opacity="0.9"/>
+    
+    <!-- Mini screen -->
+    <rect x="19" y="21" width="42" height="26" rx="2" fill="#ffffff" opacity="0.9"/>
+    
+    <!-- Mini signal line -->
+    <polyline points="24,40 30,34 36,37 42,28 48,32 54,25" 
+              stroke="#2563eb" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+    
+    <!-- Mini checkmark -->
+    <polyline points="32,55 38,61 50,47" 
+              stroke="#ffffff" stroke-width="2.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+    
+    <!-- AIIM text -->
+    <text x="82" y="48" font-family="'Georgia', serif" font-size="32" font-weight="bold" fill="#e2e8f0" letter-spacing="3">
+      AIIM
+    </text>
+    
+    <!-- Subtitle -->
+    <text x="82" y="68" font-family="'Helvetica Neue', 'Arial', sans-serif" font-size="9" fill="#94a3b8" letter-spacing="2">
+      INFORMATION INTEGRITY MONITOR
+    </text>
+  </g>
+
+  <!-- Subtle corner accents -->
+  <g opacity="0.08">
+    <!-- Top-left corner bracket -->
+    <polyline points="30,60 30,30 60,30" stroke="#2563eb" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <!-- Top-right corner bracket -->
+    <polyline points="1860,30 1890,30 1890,60" stroke="#2563eb" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <!-- Bottom-left corner bracket -->
+    <polyline points="30,1020 30,1050 60,1050" stroke="#2563eb" stroke-width="2" fill="none" stroke-linecap="round"/>
+  </g>
+
+  <!-- Very subtle floating dots (data points aesthetic) -->
+  <g opacity="0.06">
+    <circle cx="200" cy="200" r="3" fill="#2563eb"/>
+    <circle cx="350" cy="150" r="2" fill="#2563eb"/>
+    <circle cx="1650" cy="250" r="2.5" fill="#f59e0b"/>
+    <circle cx="1750" cy="300" r="2" fill="#2563eb"/>
+    <circle cx="300" cy="800" r="2" fill="#f59e0b"/>
+    <circle cx="180" cy="750" r="3" fill="#2563eb"/>
+    <circle cx="1600" cy="800" r="2" fill="#2563eb"/>
+    <circle cx="1700" cy="850" r="2.5" fill="#f59e0b"/>
+  </g>
+</svg>

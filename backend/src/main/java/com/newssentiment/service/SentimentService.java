@@ -42,11 +42,17 @@ public class SentimentService {
 
     @Transactional(readOnly = true)
     public Map<String, Long> getOverallCounts(Instant from, Instant to) {
-        List<Object[]> results = sentimentResultRepository.countBySentimentBetween(from, to);
-        Map<String, Long> counts = new HashMap<>();
+        List<Object[]> results;
+        if (from == null || to == null) {
+            results = sentimentResultRepository.countBySentiment();
+        } else {
+            results = sentimentResultRepository.countBySentimentBetween(from, to);
+        }
+
+        Map<String, Long> counts = new LinkedHashMap<>();
         counts.put("POSITIVE", 0L);
-        counts.put("NEGATIVE", 0L);
         counts.put("NEUTRAL", 0L);
+        counts.put("NEGATIVE", 0L);
 
         for (Object[] row : results) {
             SentimentResult.Sentiment sentiment = (SentimentResult.Sentiment) row[0];

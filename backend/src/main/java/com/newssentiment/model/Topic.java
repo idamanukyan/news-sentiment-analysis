@@ -21,6 +21,9 @@ public class Topic {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(name = "organization_id", nullable = false)
+    private Long organizationId;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -30,11 +33,11 @@ public class Topic {
 
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(nullable = false, columnDefinition = "TEXT[]")
-    private List<String> keywords;
+    private String[] keywords;
 
     @JdbcTypeCode(SqlTypes.ARRAY)
     @Column(columnDefinition = "BIGINT[]")
-    private List<Long> sourceIds;
+    private Long[] sourceIds;
 
     @Builder.Default
     @Column(nullable = false, updatable = false)

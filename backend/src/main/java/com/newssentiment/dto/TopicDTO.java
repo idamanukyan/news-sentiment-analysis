@@ -20,8 +20,8 @@ public record TopicDTO(
         return new TopicDTO(
                 topic.getId(),
                 topic.getName(),
-                topic.getKeywords(),
-                topic.getSourceIds(),
+                topic.getKeywords() != null ? java.util.Arrays.asList(topic.getKeywords()) : null,
+                topic.getSourceIds() != null ? java.util.Arrays.asList(topic.getSourceIds()) : null,
                 topic.getGlobalSearch(),
                 topic.getLanguage(),
                 topic.getSearchIntervalMinutes(),

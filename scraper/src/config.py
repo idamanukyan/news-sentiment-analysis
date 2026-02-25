@@ -19,8 +19,14 @@ class Settings(BaseSettings):
     # NewsAPI.org for global news search
     newsapi_key: str = ""
 
+    # Telegram API (get from https://my.telegram.org)
+    telegram_api_id: str = ""
+    telegram_api_hash: str = ""
+    telegram_phone: str = ""
+    telegram_bot_token: str = ""  # Alternative: get from @BotFather
+
     # Scraping
-    scrape_interval_minutes: int = 15
+    scrape_interval_minutes: int = 30
     max_articles_per_source: int = 50
 
     # Logging

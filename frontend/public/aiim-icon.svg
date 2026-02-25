@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1e3a5f;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2563eb;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Shield shape -->
+  <path d="M100 15 L175 45 L175 110 Q175 165 100 190 Q25 165 25 110 L25 45 Z" 
+        fill="url(#brandGrad)"/>
+  
+  <!-- Inner screen -->
+  <rect x="50" y="55" width="100" height="65" rx="5" fill="#ffffff" opacity="0.95"/>
+  
+  <!-- Data signal line -->
+  <polyline points="62,100 74,88 86,93 98,72 110,82 122,67 134,75" 
+            stroke="#2563eb" stroke-width="3.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+  
+  <!-- Status dots -->
+  <circle cx="68" cy="68" r="4" fill="#22c55e"/>
+  <circle cx="82" cy="68" r="4" fill="#f59e0b"/>
+  <circle cx="96" cy="68" r="4" fill="#ef4444"/>
+  
+  <!-- Checkmark -->
+  <polyline points="80,145 95,160 125,125" 
+            stroke="#ffffff" stroke-width="6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

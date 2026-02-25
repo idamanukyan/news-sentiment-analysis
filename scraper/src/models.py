@@ -12,6 +12,7 @@ class SourceType(enum.Enum):
     RSS = "RSS"
     WEB_SCRAPE = "WEB_SCRAPE"
     TELEGRAM = "TELEGRAM"
+    FACEBOOK = "FACEBOOK"
 
 
 class Language(enum.Enum):
@@ -48,7 +49,9 @@ class Article(Base):
     __tablename__ = "articles"
 
     id = Column(Integer, primary_key=True)
-    source_id = Column(Integer, ForeignKey("sources.id"), nullable=False)
+    source_id = Column(Integer, ForeignKey("sources.id"), nullable=True)
+    topic_id = Column(Integer, nullable=True)  # FK constraint exists in DB
+    narrative_id = Column(Integer, nullable=True)  # FK to narratives table
     external_id = Column(String(500))
     title = Column(Text, nullable=False)
     content = Column(Text)
@@ -59,6 +62,24 @@ class Article(Base):
     content_hash = Column(String(64))
     extra_data = Column("metadata", JSONB)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow)
+
+    # New fields for unified content model
+    source_type = Column(String(20), default="NEWS")  # NEWS, TELEGRAM, SOCIAL
+    platform = Column(String(50))  # web, telegram, facebook, etc.
+    engagement_count = Column(Integer, default=0)  # views, shares, reactions
+    language = Column(String(10), default="en")
+
+    # LLM classification fields (V11 migration)
+    llm_topic = Column(String(50))  # e.g., "Elections", "Foreign Policy"
+    llm_keywords = Column(ARRAY(Text))  # English keywords
+    llm_subtopic = Column(String(255))  # Brief description of specific story
+    llm_classified_at = Column(DateTime(timezone=True))
+
+    # Translation fields (V14 migration) - for cross-article matching
+    title_en = Column(Text)  # English translation of title
+    content_en = Column(Text)  # English translation of content
+    detected_language = Column(String(10), default="hy")  # ISO 639-1: hy, ru, en
+    translated_at = Column(DateTime(timezone=True))
 
     source = relationship("Source", back_populates="articles")
     sentiment_result = relationship("SentimentResult", back_populates="article", uselist=False)

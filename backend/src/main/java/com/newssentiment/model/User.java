@@ -34,9 +34,18 @@ public class User implements UserDetails {
     @Enumerated(EnumType.STRING)
     @Builder.Default
     @Column(length = 50)
-    private Role role = Role.USER;
+    private Role role = Role.VIEWER;
 
-    private Long organizationId;
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "organization_id")
+    private Organization organization;
+
+    /**
+     * Convenience method to get organization ID without loading the full entity.
+     */
+    public Long getOrganizationId() {
+        return organization != null ? organization.getId() : null;
+    }
 
     @Builder.Default
     @Column(nullable = false, updatable = false)
@@ -47,10 +56,46 @@ public class User implements UserDetails {
     @Builder.Default
     private Boolean enabled = true;
 
+    // Notification preferences
+    @Builder.Default
+    @Column(name = "email_notifications_enabled")
+    private Boolean emailNotificationsEnabled = false;
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    @Column(name = "report_frequency", length = 20)
+    private ReportFrequency reportFrequency = ReportFrequency.WEEKLY;
+
+    @Builder.Default
+    @Column(name = "alert_notifications_enabled")
+    private Boolean alertNotificationsEnabled = true;
+
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    @Column(name = "alert_severity_threshold", length = 20)
+    private AlertSeverity alertSeverityThreshold = AlertSeverity.HIGH;
+
+    @Column(name = "last_report_sent_at")
+    private Instant lastReportSentAt;
+
     public enum Role {
-        USER,
-        ADMIN,
-        LABELER
+        SUPER_ADMIN, // Platform owner - manages all organizations
+        ORG_ADMIN,   // Organization admin - manages team members
+        ANALYST,     // Full feature access within organization
+        VIEWER       // Read-only access to dashboards and content
+    }
+
+    public enum ReportFrequency {
+        NONE,
+        DAILY,
+        WEEKLY
+    }
+
+    public enum AlertSeverity {
+        LOW,
+        MEDIUM,
+        HIGH,
+        CRITICAL
     }
 
     @Override

@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter } from 'react-router-dom'
 import App from './App'
 import './index.css'
+// Initialize theme store to apply dark/light mode on load
+import './contexts/themeStore'
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -1,13 +1,11 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useAuthStore } from '../contexts/authStore'
+import { useAuthStore, UserRole } from '../contexts/authStore'
 import { authApi } from '../services/api'
 
 export default function LoginPage() {
-  const [isLogin, setIsLogin] = useState(true)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [name, setName] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
 
@@ -20,12 +18,24 @@ export default function LoginPage() {
     setLoading(true)
 
     try {
-      const response = isLogin
-        ? await authApi.login(email, password)
-        : await authApi.register(email, password, name)
-
-      login(response.data.token, { email, name })
-      navigate('/dashboard')
+      const response = await authApi.login(email, password)
+      const {
+        token,
+        role: userRole,
+        email: userEmail,
+        name: userName,
+        organizationId,
+        organizationName,
+        organizationSlug
+      } = response.data
+      const role = (userRole || 'VIEWER') as UserRole
+      const organization = organizationId ? {
+        id: organizationId,
+        name: organizationName || 'Unknown',
+        slug: organizationSlug || 'unknown'
+      } : undefined
+      login(token, { email: userEmail || email, name: userName || '', role }, organization)
+      navigate('/election')
     } catch (err: unknown) {
       const errorMessage = err instanceof Error ? err.message : 'Authentication failed'
       setError(errorMessage)
@@ -35,14 +45,20 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-lg">
-        <div>
-          <h2 className="text-center text-3xl font-bold text-gray-900">
-            News Sentiment Analysis
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-900 via-blue-800 to-slate-900">
+      <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-2xl">
+        <div className="text-center">
+          <div className="mx-auto w-16 h-16 bg-amber-500 rounded-xl flex items-center justify-center mb-4">
+            <span className="text-white font-bold text-2xl">A</span>
+          </div>
+          <h2 className="text-2xl font-bold text-gray-900">
+            AIIM
           </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            {isLogin ? 'Sign in to your account' : 'Create a new account'}
+          <p className="text-sm text-blue-600 font-medium">
+            Armenia Information Integrity Monitor
+          </p>
+          <p className="mt-4 text-sm text-gray-600">
+            Sign in to access the monitoring dashboard
           </p>
         </div>
 
@@ -54,22 +70,6 @@ export default function LoginPage() {
           )}
 
           <div className="space-y-4">
-            {!isLogin && (
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                  Name
-                </label>
-                <input
-                  id="name"
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="input mt-1"
-                  placeholder="Your name"
-                />
-              </div>
-            )}
-
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email address
@@ -81,7 +81,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="input mt-1"
-                placeholder="you@example.com"
+                placeholder="Enter your email"
               />
             </div>
 
@@ -96,7 +96,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="input mt-1"
-                placeholder="••••••••"
+                placeholder="Enter your password"
                 minLength={8}
               />
             </div>
@@ -107,20 +107,12 @@ export default function LoginPage() {
             disabled={loading}
             className="w-full btn btn-primary py-3 disabled:opacity-50"
           >
-            {loading ? 'Loading...' : isLogin ? 'Sign in' : 'Create account'}
+            {loading ? 'Signing in...' : 'Sign in'}
           </button>
 
-          <div className="text-center">
-            <button
-              type="button"
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-sm text-primary-600 hover:text-primary-700"
-            >
-              {isLogin
-                ? "Don't have an account? Sign up"
-                : 'Already have an account? Sign in'}
-            </button>
-          </div>
+          <p className="text-center text-xs text-gray-500">
+            Contact your administrator for account access
+          </p>
         </form>
       </div>
     </div>
