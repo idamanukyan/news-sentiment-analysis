@@ -25,6 +25,10 @@ class Settings(BaseSettings):
     telegram_phone: str = ""
     telegram_bot_token: str = ""  # Alternative: get from @BotFather
 
+    # Facebook cookies for authenticated scraping
+    # Get these from browser after logging into Facebook
+    facebook_cookies: str = ""  # JSON string or cookie string format
+
     # Scraping
     scrape_interval_minutes: int = 30
     max_articles_per_source: int = 50

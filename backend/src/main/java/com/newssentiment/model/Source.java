@@ -83,7 +83,8 @@ public class Source {
     public enum SourceType {
         RSS,
         WEB_SCRAPE,
-        TELEGRAM
+        TELEGRAM,
+        FACEBOOK
     }
 
     public enum Language {

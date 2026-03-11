@@ -3,15 +3,17 @@ Facebook Public Page Scraper for AIIM
 
 Monitors public Facebook pages for Armenian news outlets.
 Uses multiple methods with automatic fallback:
-1. mbasic.facebook.com scraping (preferred - simple HTML)
-2. RSS Bridge (fallback - third-party service)
+1. Authenticated scraping with cookies (preferred - full access)
+2. mbasic.facebook.com scraping (fallback - simple HTML)
+3. RSS Bridge (last resort - third-party service)
 
-This is FREE scraping - no paid APIs used.
+Supports session cookies for authenticated access.
 """
 
 import re
 import random
 import time
+import json
 import structlog
 from datetime import datetime, timezone, timedelta
 from hashlib import sha256
@@ -26,6 +28,35 @@ from ..database import get_db
 
 logger = structlog.get_logger()
 settings = get_settings()
+
+def parse_cookie_string(cookie_string: str) -> Dict[str, str]:
+    """Parse cookie string into dictionary.
+
+    Supports formats:
+    - JSON: {"c_user": "123", "xs": "abc"}
+    - Browser format: c_user=123; xs=abc; datr=xyz
+    """
+    if not cookie_string:
+        return {}
+
+    cookie_string = cookie_string.strip()
+
+    # Try JSON format first
+    if cookie_string.startswith('{'):
+        try:
+            return json.loads(cookie_string)
+        except json.JSONDecodeError:
+            pass
+
+    # Parse browser cookie format
+    cookies = {}
+    for part in cookie_string.split(';'):
+        part = part.strip()
+        if '=' in part:
+            key, value = part.split('=', 1)
+            cookies[key.strip()] = value.strip()
+
+    return cookies
 
 # User agents for rotation to avoid blocking
 USER_AGENTS = [
@@ -53,64 +84,272 @@ class FacebookScraper:
         self.session = requests.Session()
         self.rate_limit_delay = RATE_LIMIT_DELAY
         self.successful_methods = {}  # Track which method works for each page
+        self.cookies = parse_cookie_string(settings.facebook_cookies)
+        self.has_cookies = bool(self.cookies)
 
-    def _get_headers(self) -> Dict[str, str]:
+        # Apply cookies to session if available
+        if self.has_cookies:
+            for name, value in self.cookies.items():
+                self.session.cookies.set(name, value, domain='.facebook.com')
+            logger.info("facebook_cookies_loaded", cookie_count=len(self.cookies))
+
+    def _get_headers(self, authenticated: bool = False) -> Dict[str, str]:
         """Get request headers with rotating user agent."""
-        return {
+        headers = {
             "User-Agent": random.choice(USER_AGENTS),
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
             "Accept-Language": "en-US,en;q=0.9,hy;q=0.8,ru;q=0.7",
-            "Accept-Encoding": "gzip, deflate",
+            "Accept-Encoding": "gzip, deflate, br",
             "Connection": "keep-alive",
             "Upgrade-Insecure-Requests": "1",
+            "Sec-Fetch-Dest": "document",
+            "Sec-Fetch-Mode": "navigate",
+            "Sec-Fetch-Site": "none",
+            "Sec-Fetch-User": "?1",
+            "Cache-Control": "max-age=0",
         }
+        if authenticated:
+            headers["Referer"] = "https://www.facebook.com/"
+        return headers
 
-    def scrape_page(self, page_name: str, source_id: Optional[int] = None) -> List[Dict[str, Any]]:
+    def scrape_page(self, page_name: str, source_id: Optional[int] = None, page_url: Optional[str] = None) -> List[Dict[str, Any]]:
         """
         Try multiple methods to get posts from a Facebook page.
 
         Args:
             page_name: Facebook page name/username
             source_id: Optional source ID from database
+            page_url: Optional full URL (for profile.php pages)
 
         Returns:
             List of post dictionaries
         """
-        # Clean page name
+        # Clean page name (but keep original URL for profile.php pages)
+        original_url = page_url
         page_name = self._clean_page_name(page_name)
-        if not page_name:
+
+        # For profile.php pages, we need the full URL
+        is_profile_page = original_url and 'profile.php' in original_url
+
+        if not page_name and not is_profile_page:
             return []
 
         # Check if we have a known working method for this page
-        preferred_method = self.successful_methods.get(page_name)
+        cache_key = page_name or original_url
+        preferred_method = self.successful_methods.get(cache_key)
 
-        if preferred_method == "mbasic":
+        # If we have cookies, try authenticated method first
+        if self.has_cookies:
+            if preferred_method == "authenticated" or not preferred_method:
+                posts = self._scrape_authenticated(page_name, source_id, original_url)
+                if posts:
+                    logger.info("facebook_scrape_success", page=page_name or original_url, method="authenticated", count=len(posts))
+                    self.successful_methods[cache_key] = "authenticated"
+                    return posts
+
+        if preferred_method == "mbasic" and page_name:
             posts = self._scrape_mbasic(page_name, source_id)
             if posts:
                 return posts
 
-        if preferred_method == "rss_bridge":
+        if preferred_method == "rss_bridge" and page_name:
             posts = self._scrape_rss_bridge(page_name, source_id)
             if posts:
                 return posts
 
         # Try all methods in order
-        # Method 1: Try mbasic.facebook.com
-        posts = self._scrape_mbasic(page_name, source_id)
-        if posts:
-            logger.info("facebook_scrape_success", page=page_name, method="mbasic", count=len(posts))
-            self.successful_methods[page_name] = "mbasic"
-            return posts
+        # Method 1: Try mbasic.facebook.com (only for named pages, not profile.php)
+        if page_name:
+            posts = self._scrape_mbasic(page_name, source_id)
+            if posts:
+                logger.info("facebook_scrape_success", page=page_name, method="mbasic", count=len(posts))
+                self.successful_methods[cache_key] = "mbasic"
+                return posts
 
         # Method 2: Try RSS Bridge
-        posts = self._scrape_rss_bridge(page_name, source_id)
-        if posts:
-            logger.info("facebook_scrape_success", page=page_name, method="rss_bridge", count=len(posts))
-            self.successful_methods[page_name] = "rss_bridge"
+        if page_name:
+            posts = self._scrape_rss_bridge(page_name, source_id)
+            if posts:
+                logger.info("facebook_scrape_success", page=page_name, method="rss_bridge", count=len(posts))
+                self.successful_methods[cache_key] = "rss_bridge"
+                return posts
+
+        logger.warning("facebook_all_methods_failed", page=page_name or original_url)
+        return []
+
+    def _scrape_authenticated(self, page_name: Optional[str], source_id: Optional[int], page_url: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        Scrape Facebook page using authenticated session with cookies.
+
+        This method uses the main Facebook site with login cookies.
+        """
+        if not self.has_cookies:
+            return []
+
+        try:
+            # Determine URL to scrape
+            if page_url and 'profile.php' in page_url:
+                url = page_url
+            elif page_name:
+                url = f"https://www.facebook.com/{page_name}"
+            else:
+                return []
+
+            logger.debug("facebook_auth_request", url=url)
+
+            response = self.session.get(
+                url,
+                headers=self._get_headers(authenticated=True),
+                timeout=30,
+                allow_redirects=True
+            )
+
+            if response.status_code != 200:
+                logger.debug("facebook_auth_http_error", url=url, status=response.status_code)
+                return []
+
+            # Check if we're still logged in (not redirected to login)
+            if '/login' in response.url or 'login' in response.text[:2000].lower():
+                logger.warning("facebook_cookies_expired")
+                self.has_cookies = False
+                return []
+
+            soup = BeautifulSoup(response.text, 'html.parser')
+            posts = []
+
+            # Facebook's modern HTML structure uses data attributes and specific div patterns
+            # Look for post containers - they often have role="article" or specific data attributes
+            post_containers = []
+
+            # Pattern 1: role="article" divs (common for posts)
+            post_containers.extend(soup.find_all('div', {'role': 'article'}))
+
+            # Pattern 2: Look for divs with data-pagelet containing "FeedUnit"
+            for div in soup.find_all('div', attrs={'data-pagelet': True}):
+                pagelet = div.get('data-pagelet', '')
+                if 'FeedUnit' in pagelet or 'ProfileTimeline' in pagelet:
+                    post_containers.append(div)
+
+            # Pattern 3: Look for post-like structures with timestamps
+            if not post_containers:
+                # Find containers that have links with timestamps
+                for container in soup.find_all('div'):
+                    # Posts typically have a link with a timestamp
+                    time_links = container.find_all('a', href=lambda x: x and ('/posts/' in str(x) or 'story_fbid' in str(x)))
+                    if time_links and len(container.get_text(strip=True)) > 50:
+                        post_containers.append(container)
+
+            # Process found containers
+            seen_content = set()
+            for container in post_containers[:20]:  # Limit to 20 posts
+                post = self._parse_authenticated_post(container, page_name, source_id)
+                if post and post.get('content'):
+                    content_hash = sha256(post['content'].encode()).hexdigest()[:16]
+                    if content_hash not in seen_content:
+                        seen_content.add(content_hash)
+                        posts.append(post)
+
+            time.sleep(self.rate_limit_delay)
             return posts
 
-        logger.warning("facebook_all_methods_failed", page=page_name)
-        return []
+        except requests.RequestException as e:
+            logger.debug("facebook_auth_request_error", error=str(e))
+            return []
+        except Exception as e:
+            logger.error("facebook_auth_parse_error", error=str(e))
+            return []
+
+    def _parse_authenticated_post(self, container, page_name: Optional[str], source_id: Optional[int]) -> Optional[Dict[str, Any]]:
+        """Parse a single post from authenticated Facebook HTML."""
+        try:
+            # Make a copy
+            div = BeautifulSoup(str(container), 'html.parser')
+
+            # Remove comment sections, like buttons, share buttons
+            for unwanted in div.find_all(['form', 'button']):
+                unwanted.decompose()
+
+            # Try to find the main post text - usually in specific containers
+            content_parts = []
+
+            # Look for data-ad-preview="message" or similar markers
+            message_div = div.find('div', {'data-ad-preview': 'message'})
+            if message_div:
+                content_parts.append(message_div.get_text(separator=' ', strip=True))
+
+            # Look for dir="auto" divs which often contain post text
+            for text_div in div.find_all('div', {'dir': 'auto'}):
+                text = text_div.get_text(strip=True)
+                if text and len(text) > 20 and text not in content_parts:
+                    # Skip common UI text
+                    if not any(skip in text.lower() for skip in ['like', 'comment', 'share', 'see more', 'see less']):
+                        content_parts.append(text)
+
+            # Fallback: get all text
+            if not content_parts:
+                content = div.get_text(separator=' ', strip=True)
+                content = re.sub(r'\s+', ' ', content).strip()
+                if len(content) > 30:
+                    content_parts = [content[:3000]]
+
+            content = ' '.join(content_parts)
+            content = re.sub(r'\s+', ' ', content).strip()
+
+            if not content or len(content) < 20:
+                return None
+
+            # Skip UI-only content
+            skip_patterns = [
+                r'^(Like|Comment|Share|Reply|See more|See less|Write a comment)',
+                r'^\d+\s*(comments?|shares?|likes?)\s*$',
+            ]
+            for pattern in skip_patterns:
+                if re.match(pattern, content, re.I):
+                    return None
+
+            # Try to find post URL
+            post_url = None
+            for link in div.find_all('a', href=True):
+                href = link.get('href', '')
+                if '/posts/' in href or 'story_fbid' in href:
+                    if href.startswith('/'):
+                        post_url = f"https://www.facebook.com{href}"
+                    else:
+                        post_url = href
+                    break
+
+            # Try to find timestamp
+            published_at = None
+            # Modern FB uses various time representations
+            time_elements = div.find_all(['abbr', 'span', 'a'], attrs={'data-utime': True})
+            for elem in time_elements:
+                try:
+                    utime = elem.get('data-utime')
+                    if utime:
+                        published_at = datetime.fromtimestamp(int(utime), tz=timezone.utc)
+                        break
+                except (ValueError, TypeError):
+                    continue
+
+            # If no timestamp found, use current time
+            if not published_at:
+                published_at = datetime.now(timezone.utc)
+
+            return {
+                'page_name': page_name or 'unknown',
+                'source_id': source_id,
+                'content': content[:5000],
+                'post_url': post_url,
+                'published_at': published_at,
+                'reaction_count': 0,
+                'comment_count': 0,
+                'share_count': 0,
+                'post_type': 'text',
+            }
+
+        except Exception as e:
+            logger.debug("facebook_auth_post_parse_error", error=str(e))
+            return None
 
     def _clean_page_name(self, page_name: str) -> Optional[str]:
         """Extract clean page name from URL or name."""
@@ -119,16 +358,17 @@ class FacebookScraper:
 
         # Handle full URLs
         if "facebook.com" in page_name:
+            # Check for profile.php URLs - these need special handling
+            if 'profile.php' in page_name:
+                # Return None here, but the URL will be used directly
+                return None
+
             match = re.search(r'facebook\.com/([^/?#]+)', page_name)
             if match:
                 page_name = match.group(1)
 
         # Remove @ prefix if present
         page_name = page_name.lstrip('@').strip('/')
-
-        # Skip profile.php URLs (these are user profiles, not pages)
-        if page_name.startswith('profile.php'):
-            return None
 
         return page_name if page_name else None
 
@@ -475,18 +715,24 @@ def fetch_all_facebook_sources() -> int:
                 try:
                     # Extract page name from URL
                     page_name = None
-                    if source.url:
-                        match = re.search(r'facebook\.com/([^/?#]+)', source.url)
-                        if match:
-                            page_name = match.group(1)
+                    page_url = source.url
 
-                    if not page_name:
+                    if source.url:
+                        # Check for profile.php URLs
+                        if 'profile.php' in source.url:
+                            page_name = None  # Will use full URL
+                        else:
+                            match = re.search(r'facebook\.com/([^/?#]+)', source.url)
+                            if match:
+                                page_name = match.group(1)
+
+                    if not page_name and 'profile.php' not in (source.url or ''):
                         logger.warning("facebook_invalid_url", source_id=source.id, url=source.url)
                         sources_failed += 1
                         continue
 
-                    # Fetch posts
-                    posts = scraper.scrape_page(page_name, source_id=source.id)
+                    # Fetch posts (pass full URL for profile.php pages)
+                    posts = scraper.scrape_page(page_name, source_id=source.id, page_url=page_url)
 
                     if not posts:
                         logger.debug("facebook_no_posts", page=page_name)

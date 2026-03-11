@@ -24,6 +24,7 @@ import {
   ShieldAlert,
   Info,
   MessageCircle,
+  Facebook,
 } from 'lucide-react'
 
 interface Source {
@@ -102,6 +103,7 @@ function SourceTypeBadge({ type }: { type: string }) {
     RSS: { className: 'badge-green', icon: <Newspaper size={12} />, label: 'RSS' },
     WEB_SCRAPE: { className: 'badge-blue', icon: <Globe size={12} />, label: 'Web' },
     TELEGRAM: { className: 'badge-purple', icon: <Radio size={12} />, label: 'Telegram' },
+    FACEBOOK: { className: 'badge-blue', icon: <Facebook size={12} />, label: 'Facebook' },
   }
   const { className, icon, label } = config[type] || { className: 'badge-gray', icon: <FileText size={12} />, label: type }
   return (
@@ -278,7 +280,7 @@ export default function SourcesPage() {
   const canManageSources = useAuthStore((state) => state.canManageSources)
   const isAdmin = canManageSources()
 
-  const [filter, setFilter] = useState<'all' | 'rss' | 'telegram' | 'web'>('all')
+  const [filter, setFilter] = useState<'all' | 'rss' | 'telegram' | 'web' | 'facebook'>('all')
   const [showModal, setShowModal] = useState(false)
   const [editingSource, setEditingSource] = useState<Source | null>(null)
   const [formData, setFormData] = useState<SourceFormData>(defaultFormData)
@@ -301,7 +303,7 @@ export default function SourcesPage() {
         total: number
         active: number
         inactive: number
-        byType: { rss: number; telegram: number; webScrape: number }
+        byType: { rss: number; telegram: number; webScrape: number; facebook: number }
         byLeaning: { government: number; opposition: number; independent: number; diaspora: number }
       }
     },
@@ -396,6 +398,7 @@ export default function SourcesPage() {
     if (filter === 'rss') return s.type === 'RSS'
     if (filter === 'telegram') return s.type === 'TELEGRAM'
     if (filter === 'web') return s.type === 'WEB_SCRAPE'
+    if (filter === 'facebook') return s.type === 'FACEBOOK'
     return true
   })
 
@@ -407,6 +410,7 @@ export default function SourcesPage() {
       rss: sources.filter(s => s.type === 'RSS').length,
       telegram: sources.filter(s => s.type === 'TELEGRAM').length,
       webScrape: sources.filter(s => s.type === 'WEB_SCRAPE').length,
+      facebook: sources.filter(s => s.type === 'FACEBOOK').length,
     },
   }
 
@@ -414,8 +418,8 @@ export default function SourcesPage() {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          {Array.from({ length: 5 }).map((_, i) => (
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
             <StatCardSkeleton key={i} />
           ))}
         </div>
@@ -496,7 +500,7 @@ export default function SourcesPage() {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
         <div className="card p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -533,11 +537,22 @@ export default function SourcesPage() {
         <div className="card p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Web Scrape</p>
-              <p className="text-2xl font-bold text-blue-600">{displayStats.byType.webScrape}</p>
+              <p className="text-sm text-gray-600">Facebook</p>
+              <p className="text-2xl font-bold text-blue-600">{displayStats.byType.facebook}</p>
             </div>
             <div className="p-2.5 bg-blue-100 rounded-lg">
-              <Globe size={20} className="text-blue-600" />
+              <Facebook size={20} className="text-blue-600" />
+            </div>
+          </div>
+        </div>
+        <div className="card p-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600">Web Scrape</p>
+              <p className="text-2xl font-bold text-sky-600">{displayStats.byType.webScrape}</p>
+            </div>
+            <div className="p-2.5 bg-sky-100 rounded-lg">
+              <Globe size={20} className="text-sky-600" />
             </div>
           </div>
         </div>
@@ -556,7 +571,7 @@ export default function SourcesPage() {
 
       {/* Filters and Actions */}
       <div className="flex items-center justify-between">
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setFilter('all')}
             className={`btn btn-sm ${filter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
@@ -578,8 +593,15 @@ export default function SourcesPage() {
             Telegram
           </button>
           <button
+            onClick={() => setFilter('facebook')}
+            className={`btn btn-sm ${filter === 'facebook' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'btn-secondary'}`}
+          >
+            <Facebook size={14} />
+            Facebook
+          </button>
+          <button
             onClick={() => setFilter('web')}
-            className={`btn btn-sm ${filter === 'web' ? 'btn-primary' : 'btn-secondary'}`}
+            className={`btn btn-sm ${filter === 'web' ? 'bg-sky-600 text-white hover:bg-sky-700' : 'btn-secondary'}`}
           >
             <Globe size={14} />
             Web
@@ -711,26 +733,6 @@ export default function SourcesPage() {
       <div className="space-y-3">
         <h3 className="text-sm font-medium text-gray-500 uppercase tracking-wide">Coming Soon</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Facebook Monitoring */}
-          <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg p-5 opacity-70">
-            <div className="flex items-start gap-4">
-              <div className="p-3 bg-gray-100 rounded-lg">
-                <Globe size={24} className="text-gray-400" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <h4 className="font-semibold text-gray-400">Facebook Monitoring</h4>
-                  <span className="px-2 py-0.5 text-xs font-medium bg-gray-200 text-gray-500 rounded">
-                    Coming Q2 2026
-                  </span>
-                </div>
-                <p className="text-sm text-gray-400">
-                  Track public pages and groups
-                </p>
-              </div>
-            </div>
-          </div>
-
           {/* X/Twitter Monitoring */}
           <div className="bg-gray-50 border-2 border-dashed border-gray-200 rounded-lg p-5 opacity-70">
             <div className="flex items-start gap-4">
@@ -784,6 +786,7 @@ export default function SourcesPage() {
                   <option value="RSS">RSS Feed</option>
                   <option value="WEB_SCRAPE">Web Scrape</option>
                   <option value="TELEGRAM">Telegram Channel</option>
+                  <option value="FACEBOOK">Facebook Page</option>
                 </select>
               </div>
 
@@ -801,14 +804,19 @@ export default function SourcesPage() {
 
               <div>
                 <label className="label">
-                  {formData.type === 'TELEGRAM' ? 'Channel URL or @handle' : 'URL'}
+                  {formData.type === 'TELEGRAM' ? 'Channel URL or @handle' :
+                   formData.type === 'FACEBOOK' ? 'Facebook Page URL' : 'URL'}
                 </label>
                 <input
                   type="text"
                   value={formData.url}
                   onChange={e => setFormData({ ...formData, url: e.target.value })}
                   className="input"
-                  placeholder={formData.type === 'TELEGRAM' ? 'https://t.me/channel or @channel' : 'https://...'}
+                  placeholder={
+                    formData.type === 'TELEGRAM' ? 'https://t.me/channel or @channel' :
+                    formData.type === 'FACEBOOK' ? 'https://facebook.com/pagename' :
+                    'https://...'
+                  }
                   required
                 />
               </div>

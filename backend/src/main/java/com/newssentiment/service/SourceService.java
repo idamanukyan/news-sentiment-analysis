@@ -149,6 +149,7 @@ public class SourceService {
         long rss = allSources.stream().filter(s -> s.getType() == Source.SourceType.RSS).count();
         long telegram = allSources.stream().filter(s -> s.getType() == Source.SourceType.TELEGRAM).count();
         long webScrape = allSources.stream().filter(s -> s.getType() == Source.SourceType.WEB_SCRAPE).count();
+        long facebook = allSources.stream().filter(s -> s.getType() == Source.SourceType.FACEBOOK).count();
 
         // Political leaning counts
         long government = allSources.stream()
@@ -168,7 +169,8 @@ public class SourceService {
                 "byType", Map.of(
                         "rss", rss,
                         "telegram", telegram,
-                        "webScrape", webScrape
+                        "webScrape", webScrape,
+                        "facebook", facebook
                 ),
                 "byLeaning", Map.of(
                         "government", government,

@@ -27,6 +27,7 @@ import {
   BookmarkCheck,
   Wifi,
   WifiOff,
+  Facebook,
 } from 'lucide-react'
 
 const SENTIMENTS = [
@@ -47,6 +48,7 @@ const SOURCE_TYPES = [
   { value: '', label: 'All Types' },
   { value: 'RSS', label: 'RSS Feeds' },
   { value: 'TELEGRAM', label: 'Telegram' },
+  { value: 'FACEBOOK', label: 'Facebook' },
   { value: 'WEB_SCRAPE', label: 'Web Scrape' },
 ]
 
@@ -112,6 +114,7 @@ function SourceTypeBadge({ sourceType }: { sourceType?: string }) {
     RSS: { className: 'badge-blue', icon: <Newspaper size={12} />, label: 'RSS' },
     WEB_SCRAPE: { className: 'badge-green', icon: <Globe size={12} />, label: 'Web' },
     TELEGRAM: { className: 'bg-sky-100 text-sky-700', icon: <Radio size={12} />, label: 'Telegram' },
+    FACEBOOK: { className: 'bg-blue-100 text-blue-700', icon: <Facebook size={12} />, label: 'Facebook' },
   }
 
   const { className, icon, label } = config[sourceType || ''] || { className: 'badge-gray', icon: <FileText size={12} />, label: 'News' }
