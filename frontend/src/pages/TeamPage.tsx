@@ -103,7 +103,7 @@ export default function TeamPage() {
             )}
           </button>
           {canCreateThread && (
-            <button onClick={() => setShowNewThread(true)} className="btn-primary flex items-center gap-2">
+            <button onClick={() => setShowNewThread(true)} className="btn btn-primary flex items-center gap-2">
               <Plus size={16} /> New Discussion
             </button>
           )}
@@ -114,13 +114,16 @@ export default function TeamPage() {
         <div className="text-center py-12 text-text-secondary">Loading...</div>
       ) : threads.length === 0 ? (
         <div className="card p-12 text-center">
-          <MessageSquare className="mx-auto text-text-secondary mb-4" size={48} />
-          <h3 className="text-lg font-medium text-white mb-2">No discussions yet</h3>
-          <p className="text-text-secondary mb-4">
-            Start a conversation with your team
+          <div className="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+            <MessageSquare className="text-primary-600 dark:text-primary-400" size={32} />
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No discussions yet</h3>
+          <p className="text-gray-500 dark:text-gray-400 mb-6 max-w-sm mx-auto">
+            Start a conversation with your team to collaborate on narratives and alerts
           </p>
           {canCreateThread && (
-            <button onClick={() => setShowNewThread(true)} className="btn-primary">
+            <button onClick={() => setShowNewThread(true)} className="btn btn-primary">
+              <Plus size={16} />
               Create First Discussion
             </button>
           )}
@@ -367,7 +370,7 @@ function ThreadDetail({
               <button
                 type="submit"
                 disabled={!replyContent.trim() || addReplyMutation.isPending}
-                className="btn-primary flex items-center gap-2 disabled:opacity-50"
+                className="btn btn-primary flex items-center gap-2 disabled:opacity-50"
               >
                 <Send size={16} />
                 {addReplyMutation.isPending ? 'Posting...' : 'Post Reply'}
@@ -422,12 +425,12 @@ function ReplyCard({
                 rows={3}
               />
               <div className="flex gap-2">
-                <button onClick={handleSave} className="btn-primary text-sm py-1">
+                <button onClick={handleSave} className="btn btn-primary text-sm py-1">
                   Save
                 </button>
                 <button
                   onClick={() => { setIsEditing(false); setEditContent(reply.content) }}
-                  className="btn-secondary text-sm py-1"
+                  className="btn btn-secondary text-sm py-1"
                 >
                   Cancel
                 </button>
@@ -505,19 +508,24 @@ function NewThreadModal({
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-card-bg rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-white">New Discussion</h3>
-          <button onClick={onClose} className="text-text-secondary hover:text-white">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto animate-fade-in">
+        <div className="flex justify-between items-center p-5 border-b border-gray-200 dark:border-slate-700">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">New Discussion</h3>
+          <button
+            onClick={onClose}
+            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+          >
             <X size={20} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="p-5 space-y-5">
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">Discussion Type</label>
-            <div className="flex gap-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Discussion Type
+            </label>
+            <div className="flex gap-2 flex-wrap">
               {(['GENERAL', 'NARRATIVE', 'ALERT'] as DiscussionType[]).map(type => (
                 <button
                   key={type}
@@ -527,15 +535,15 @@ function NewThreadModal({
                     setNarrativeId(undefined)
                     setAlertId(undefined)
                   }}
-                  className={`px-3 py-1.5 rounded text-sm flex items-center gap-1 ${
+                  className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors ${
                     discussionType === type
-                      ? 'bg-accent text-white'
-                      : 'bg-white/5 text-text-secondary hover:bg-white/10'
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-gray-100 dark:bg-slate-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-slate-600'
                   }`}
                 >
-                  {type === 'GENERAL' && <MessageSquare size={14} />}
-                  {type === 'NARRATIVE' && <FileText size={14} />}
-                  {type === 'ALERT' && <AlertTriangle size={14} />}
+                  {type === 'GENERAL' && <MessageSquare size={16} />}
+                  {type === 'NARRATIVE' && <FileText size={16} />}
+                  {type === 'ALERT' && <AlertTriangle size={16} />}
                   {type.charAt(0) + type.slice(1).toLowerCase()}
                 </button>
               ))}
@@ -544,13 +552,13 @@ function NewThreadModal({
 
           {discussionType === 'NARRATIVE' && (
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 Link to Narrative
               </label>
               <select
                 value={narrativeId || ''}
                 onChange={(e) => setNarrativeId(e.target.value ? Number(e.target.value) : undefined)}
-                className="input w-full"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="">Select a narrative...</option>
                 {narratives.map(n => (
@@ -562,13 +570,13 @@ function NewThreadModal({
 
           {discussionType === 'ALERT' && (
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                 Link to Alert
               </label>
               <select
                 value={alertId || ''}
                 onChange={(e) => setAlertId(e.target.value ? Number(e.target.value) : undefined)}
-                className="input w-full"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               >
                 <option value="">Select an alert...</option>
                 {alerts.map(a => (
@@ -579,37 +587,56 @@ function NewThreadModal({
           )}
 
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">Title</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+              Title
+            </label>
             <input
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="input w-full"
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent"
               required
               placeholder="What would you like to discuss?"
             />
           </div>
+
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
               Content
-              <span className="text-text-secondary/60 ml-2">(Use @username to mention team members)</span>
             </label>
             <textarea
               value={content}
               onChange={(e) => setContent(e.target.value)}
-              className="input w-full"
-              rows={6}
+              className="w-full px-3 py-2 border border-gray-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-gray-900 dark:text-white placeholder-gray-400 focus:ring-2 focus:ring-primary-500 focus:border-transparent resize-none"
+              rows={5}
               required
-              placeholder="Share your thoughts... Use @name to mention team members"
+              placeholder="Share your thoughts..."
             />
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-1.5">
+              Tip: Use @username to mention team members
+            </p>
           </div>
 
-          <div className="flex gap-3 pt-2">
-            <button type="button" onClick={onClose} className="btn-secondary flex-1">
+          <div className="flex gap-3 pt-3">
+            <button type="button" onClick={onClose} className="btn btn-secondary flex-1">
               Cancel
             </button>
-            <button type="submit" className="btn-primary flex-1" disabled={isLoading}>
-              {isLoading ? 'Creating...' : 'Create Discussion'}
+            <button
+              type="submit"
+              className="btn btn-primary flex-1"
+              disabled={isLoading || !title.trim() || !content.trim()}
+            >
+              {isLoading ? (
+                <>
+                  <span className="animate-spin mr-2">&#9696;</span>
+                  Creating...
+                </>
+              ) : (
+                <>
+                  <Plus size={16} />
+                  Create Discussion
+                </>
+              )}
             </button>
           </div>
         </form>
