@@ -21,6 +21,7 @@ from typing import List, Dict, Any, Optional
 
 import requests
 from bs4 import BeautifulSoup
+from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeout
 
 from ..models import Article, Source
 from ..config import get_settings
@@ -138,8 +139,16 @@ class FacebookScraper:
         cache_key = page_name or original_url
         preferred_method = self.successful_methods.get(cache_key)
 
-        # If we have cookies, try authenticated method first
+        # If we have cookies, try Playwright method first (handles JavaScript rendering)
         if self.has_cookies:
+            if preferred_method == "playwright" or not preferred_method:
+                posts = self._scrape_playwright(page_name, source_id, original_url)
+                if posts:
+                    logger.info("facebook_scrape_success", page=page_name or original_url, method="playwright", count=len(posts))
+                    self.successful_methods[cache_key] = "playwright"
+                    return posts
+
+            # Fallback to simple authenticated request (no JS rendering)
             if preferred_method == "authenticated" or not preferred_method:
                 posts = self._scrape_authenticated(page_name, source_id, original_url)
                 if posts:
@@ -158,7 +167,15 @@ class FacebookScraper:
                 return posts
 
         # Try all methods in order
-        # Method 1: Try mbasic.facebook.com (only for named pages, not profile.php)
+        # Method 1: Try Playwright (JavaScript rendering) if we have cookies
+        if self.has_cookies:
+            posts = self._scrape_playwright(page_name, source_id, original_url)
+            if posts:
+                logger.info("facebook_scrape_success", page=page_name or original_url, method="playwright", count=len(posts))
+                self.successful_methods[cache_key] = "playwright"
+                return posts
+
+        # Method 2: Try mbasic.facebook.com (only for named pages, not profile.php)
         if page_name:
             posts = self._scrape_mbasic(page_name, source_id)
             if posts:
@@ -166,7 +183,7 @@ class FacebookScraper:
                 self.successful_methods[cache_key] = "mbasic"
                 return posts
 
-        # Method 2: Try RSS Bridge
+        # Method 3: Try RSS Bridge
         if page_name:
             posts = self._scrape_rss_bridge(page_name, source_id)
             if posts:
@@ -258,6 +275,191 @@ class FacebookScraper:
         except Exception as e:
             logger.error("facebook_auth_parse_error", error=str(e))
             return []
+
+    def _scrape_playwright(self, page_name: Optional[str], source_id: Optional[int], page_url: Optional[str] = None) -> List[Dict[str, Any]]:
+        """
+        Scrape Facebook page using Playwright for JavaScript rendering.
+
+        This method uses a headless browser to render the page and extract posts.
+        """
+        if not self.has_cookies:
+            return []
+
+        try:
+            # Determine URL to scrape
+            if page_url and 'profile.php' in page_url:
+                url = page_url
+            elif page_name:
+                url = f"https://www.facebook.com/{page_name}"
+            else:
+                return []
+
+            logger.debug("facebook_playwright_request", url=url)
+
+            with sync_playwright() as p:
+                # Launch browser in headless mode
+                browser = p.chromium.launch(headless=True)
+                context = browser.new_context(
+                    user_agent=random.choice(USER_AGENTS),
+                    viewport={'width': 1280, 'height': 800}
+                )
+
+                # Add cookies
+                cookie_list = []
+                for name, value in self.cookies.items():
+                    cookie_list.append({
+                        'name': name,
+                        'value': value,
+                        'domain': '.facebook.com',
+                        'path': '/'
+                    })
+                context.add_cookies(cookie_list)
+
+                page = context.new_page()
+
+                try:
+                    # Navigate to the page - use domcontentloaded for faster initial load
+                    page.goto(url, wait_until='domcontentloaded', timeout=60000)
+
+                    # Wait for page to stabilize
+                    page.wait_for_timeout(5000)
+
+                    # Scroll down to load more posts
+                    for _ in range(2):
+                        page.evaluate('window.scrollBy(0, 800)')
+                        page.wait_for_timeout(2000)
+
+                    # Check if logged in
+                    if '/login' in page.url:
+                        logger.warning("facebook_playwright_not_logged_in")
+                        browser.close()
+                        return []
+
+                    # Get page content
+                    html = page.content()
+
+                except PlaywrightTimeout:
+                    logger.debug("facebook_playwright_timeout", url=url)
+                    browser.close()
+                    return []
+                except Exception as e:
+                    logger.debug("facebook_playwright_page_error", url=url, error=str(e))
+                    browser.close()
+                    return []
+
+                browser.close()
+
+            # Parse the rendered HTML
+            soup = BeautifulSoup(html, 'html.parser')
+            posts = []
+
+            # Look for post containers - Facebook uses role="article" for posts
+            post_containers = soup.find_all('div', {'role': 'article'})
+
+            # Also look for feed story containers
+            if not post_containers:
+                for div in soup.find_all('div', attrs={'data-pagelet': True}):
+                    pagelet = div.get('data-pagelet', '')
+                    if 'FeedUnit' in pagelet or 'ProfileTimeline' in pagelet:
+                        post_containers.append(div)
+
+            # Process found containers
+            seen_content = set()
+            for container in post_containers[:20]:
+                post = self._parse_playwright_post(container, page_name, source_id)
+                if post and post.get('content'):
+                    content_hash = sha256(post['content'].encode()).hexdigest()[:16]
+                    if content_hash not in seen_content:
+                        seen_content.add(content_hash)
+                        posts.append(post)
+
+            logger.debug("facebook_playwright_parsed", url=url, posts=len(posts))
+            time.sleep(self.rate_limit_delay)
+            return posts
+
+        except Exception as e:
+            logger.error("facebook_playwright_error", error=str(e))
+            return []
+
+    def _parse_playwright_post(self, container, page_name: Optional[str], source_id: Optional[int]) -> Optional[Dict[str, Any]]:
+        """Parse a single post from Playwright-rendered Facebook HTML."""
+        try:
+            div = BeautifulSoup(str(container), 'html.parser')
+
+            # Remove unwanted elements
+            for unwanted in div.find_all(['form', 'button', 'svg']):
+                unwanted.decompose()
+
+            content_parts = []
+
+            # Look for post text in various containers
+            # Pattern 1: data-ad-preview="message"
+            message_div = div.find('div', {'data-ad-preview': 'message'})
+            if message_div:
+                content_parts.append(message_div.get_text(separator=' ', strip=True))
+
+            # Pattern 2: dir="auto" divs with substantial text
+            for text_div in div.find_all('div', {'dir': 'auto'}):
+                text = text_div.get_text(strip=True)
+                if text and len(text) > 30:
+                    # Skip UI elements
+                    skip_words = ['like', 'comment', 'share', 'see more', 'see less',
+                                  'reply', 'write a comment', 'most relevant']
+                    if not any(skip in text.lower() for skip in skip_words):
+                        if text not in content_parts:
+                            content_parts.append(text)
+
+            # Pattern 3: span elements with text (Facebook often uses spans)
+            if not content_parts:
+                for span in div.find_all('span', {'dir': 'auto'}):
+                    text = span.get_text(strip=True)
+                    if text and len(text) > 30:
+                        content_parts.append(text)
+
+            content = ' '.join(content_parts)
+            content = re.sub(r'\s+', ' ', content).strip()
+
+            if not content or len(content) < 30:
+                return None
+
+            # Skip UI-only content
+            skip_patterns = [
+                r'^(Like|Comment|Share|Reply|See more|See less)',
+                r'^\d+\s*(comments?|shares?|likes?)\s*$',
+            ]
+            for pattern in skip_patterns:
+                if re.match(pattern, content, re.I):
+                    return None
+
+            # Try to find post URL
+            post_url = None
+            for link in div.find_all('a', href=True):
+                href = link.get('href', '')
+                if '/posts/' in href or 'story_fbid' in href:
+                    if href.startswith('/'):
+                        post_url = f"https://www.facebook.com{href}"
+                    else:
+                        post_url = href
+                    break
+
+            # Generate external ID
+            if post_url:
+                external_id = f"fb_{sha256(post_url.encode()).hexdigest()[:16]}"
+            else:
+                external_id = f"fb_{sha256(content[:100].encode()).hexdigest()[:16]}"
+
+            return {
+                'source_id': source_id,
+                'external_id': external_id,
+                'content': content[:5000],
+                'url': post_url,
+                'author': page_name,
+                'published_at': datetime.now(timezone.utc),
+            }
+
+        except Exception as e:
+            logger.debug("facebook_playwright_parse_error", error=str(e))
+            return None
 
     def _parse_authenticated_post(self, container, page_name: Optional[str], source_id: Optional[int]) -> Optional[Dict[str, Any]]:
         """Parse a single post from authenticated Facebook HTML."""
