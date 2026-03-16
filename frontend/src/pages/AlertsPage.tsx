@@ -767,19 +767,19 @@ export default function AlertsPage() {
               </button>
             </>
           ) : (
-            <>
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Bell size={32} className="text-green-600" />
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Bell size={32} className="text-green-600 dark:text-green-400" />
               </div>
               <p className="empty-state-title">All clear!</p>
-              <p className="empty-state-description max-w-md">
+              <p className="empty-state-description max-w-md mx-auto">
                 No active alerts at this time. Alerts are automatically triggered when narratives show unusual spikes,
                 reach threat thresholds, or require attention.
               </p>
               <Link to="/narratives" className="btn btn-primary mt-4">
                 View Narratives
               </Link>
-            </>
+            </div>
           )}
         </div>
       )}
