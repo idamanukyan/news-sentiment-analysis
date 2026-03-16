@@ -46,18 +46,7 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                // Static resources for SPA frontend
-                .requestMatchers(
-                    "/",
-                    "/index.html",
-                    "/favicon.ico",
-                    "/assets/**",
-                    "/*.js",
-                    "/*.css",
-                    "/*.png",
-                    "/*.svg",
-                    "/*.ico"
-                ).permitAll()
+                // Public API endpoints
                 .requestMatchers(
                     "/api/v1/auth/**",
                     "/api/v1/system/health",
@@ -68,8 +57,12 @@ public class SecurityConfig {
                     "/swagger-ui.html",
                     "/ws/**"
                 ).permitAll()
+                // Admin API endpoints - require SUPER_ADMIN role
                 .requestMatchers("/api/v1/admin/**").hasRole("SUPER_ADMIN")
-                .anyRequest().authenticated()
+                // All other API endpoints - require authentication
+                .requestMatchers("/api/**").authenticated()
+                // Everything else (SPA routes, static resources) - permit all
+                .anyRequest().permitAll()
             )
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
