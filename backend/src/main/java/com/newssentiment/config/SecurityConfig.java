@@ -46,6 +46,18 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                // Static resources for SPA frontend
+                .requestMatchers(
+                    "/",
+                    "/index.html",
+                    "/favicon.ico",
+                    "/assets/**",
+                    "/*.js",
+                    "/*.css",
+                    "/*.png",
+                    "/*.svg",
+                    "/*.ico"
+                ).permitAll()
                 .requestMatchers(
                     "/api/v1/auth/**",
                     "/api/v1/system/health",
