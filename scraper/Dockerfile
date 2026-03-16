@@ -34,8 +34,11 @@ RUN groupadd -g 1000 appgroup && \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Install Playwright browsers (as root, before switching user)
-RUN playwright install chromium
+# Install Playwright browsers to a shared location accessible by appuser
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/playwright
+RUN mkdir -p /opt/playwright && \
+    playwright install chromium && \
+    chmod -R 755 /opt/playwright
 
 # Copy source code
 COPY src ./src
@@ -44,6 +47,9 @@ COPY src ./src
 RUN chown -R appuser:appgroup /app
 
 USER appuser
+
+# Ensure appuser can find Playwright browsers
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/playwright
 
 # Run scraper
 CMD ["python", "-m", "src.main"]
