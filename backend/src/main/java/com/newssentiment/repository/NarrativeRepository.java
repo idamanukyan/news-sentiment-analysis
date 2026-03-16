@@ -53,6 +53,15 @@ public interface NarrativeRepository extends JpaRepository<Narrative, Long> {
     @Query("SELECT COUNT(n) FROM Narrative n WHERE n.organizationId = :orgId AND n.status = 'ACTIVE'")
     long countByOrganizationIdAndActive(@Param("orgId") Long orgId);
 
+    @Query("SELECT COUNT(n) FROM Narrative n WHERE n.organizationId = :orgId AND n.status = 'PENDING_REVIEW'")
+    long countByOrganizationIdAndPendingReview(@Param("orgId") Long orgId);
+
+    @Query("SELECT n FROM Narrative n WHERE n.organizationId = :orgId AND n.status != 'PENDING_REVIEW' ORDER BY n.lastSeen DESC")
+    Page<Narrative> findByOrganizationIdExcludingPendingReview(@Param("orgId") Long orgId, Pageable pageable);
+
+    @Query("SELECT n FROM Narrative n WHERE n.organizationId = :orgId AND n.status = 'PENDING_REVIEW' ORDER BY n.createdAt DESC")
+    Page<Narrative> findByOrganizationIdAndPendingReview(@Param("orgId") Long orgId, Pageable pageable);
+
     // Legacy queries (for internal/system use)
     Optional<Narrative> findByName(String name);
 

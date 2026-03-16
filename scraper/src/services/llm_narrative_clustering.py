@@ -609,12 +609,139 @@ Rules:
         return all_clusters
 
     # =========================================================================
-    # STEP 3: SAVE NARRATIVES
+    # STEP 3: GENERATE AI SUMMARY
+    # =========================================================================
+
+    def generate_ai_summary(self, cluster: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """
+        Generate a structured AI summary for a narrative cluster using Claude Haiku.
+
+        Args:
+            cluster: Cluster dict with articles, title, topic, etc.
+
+        Returns:
+            Dict with why_detected, spread_pattern, threat_signal, suggested_title, analyst_note
+            or None if generation fails.
+        """
+        articles = cluster.get("articles", [])
+        if not articles:
+            return None
+
+        # Gather cluster metadata
+        keywords = []
+        for article in articles:
+            keywords.extend(article.get("keywords", []))
+        # Deduplicate and get top keywords
+        keyword_counts = defaultdict(int)
+        for kw in keywords:
+            keyword_counts[kw.lower()] += 1
+        top_keywords = sorted(keyword_counts.keys(), key=lambda k: keyword_counts[k], reverse=True)[:10]
+
+        # Source breakdown
+        source_types = defaultdict(int)
+        source_names = set()
+        for a in articles:
+            source_type = a.get("source_type", "UNKNOWN")
+            source_types[source_type] += 1
+            if a.get("source_name"):
+                source_names.add(a["source_name"])
+
+        # Time range
+        dates = [a["published_at"] for a in articles if a.get("published_at")]
+        first_seen = min(dates).strftime("%Y-%m-%d %H:%M") if dates else "Unknown"
+        last_seen = max(dates).strftime("%Y-%m-%d %H:%M") if dates else "Unknown"
+
+        # Article count by type
+        telegram_count = source_types.get("TELEGRAM", 0)
+        news_count = sum(v for k, v in source_types.items() if k != "TELEGRAM")
+
+        # Top 5 article titles
+        titles = [a.get("title", "")[:100] for a in articles[:5] if a.get("title")]
+        titles_text = "\n".join(f"- {t}" for t in titles)
+
+        # Check for coordination signals (high similarity across sources)
+        unique_sources = len(source_names)
+        is_multi_source = unique_sources >= 3
+
+        # Build the prompt
+        prompt = f"""Analyze this auto-detected narrative cluster and provide a structured summary for analyst review.
+
+CLUSTER DATA:
+- Keywords: {', '.join(top_keywords[:8])}
+- Total articles: {len(articles)} ({news_count} news, {telegram_count} Telegram)
+- Unique sources: {unique_sources}
+- Source breakdown: {dict(source_types)}
+- Time range: {first_seen} to {last_seen}
+- Topic: {cluster.get('topic', 'Unknown')}
+
+SAMPLE ARTICLE TITLES:
+{titles_text}
+
+Respond with ONLY this JSON object (no other text):
+{{
+  "why_detected": "<1-2 sentences: what pattern triggered this cluster - mention specific keywords, topics, or timing patterns>",
+  "spread_pattern": "<1 sentence: single source, organic multi-source spread, or coordinated (same story at similar times from many sources)>",
+  "threat_signal": "<one of: none, low, medium, high - based on negative sentiment, coordination signs, or sensitive topics>",
+  "suggested_title": "<concise 5-10 word descriptive title for this narrative>",
+  "analyst_note": "<1 sentence: what the analyst should verify or investigate further>"
+}}"""
+
+        try:
+            # Budget check
+            if not can_spend():
+                logger.warning("budget_exhausted_skipping_ai_summary")
+                return None
+
+            response = self.anthropic.messages.create(
+                model=self.model,
+                max_tokens=500,
+                messages=[{"role": "user", "content": prompt}]
+            )
+
+            # Track spending
+            add_spend(response.usage.input_tokens, response.usage.output_tokens)
+
+            response_text = response.content[0].text.strip()
+
+            # Handle markdown code blocks
+            if response_text.startswith("```"):
+                response_text = re.sub(r'^```json?\s*', '', response_text)
+                response_text = re.sub(r'\s*```$', '', response_text)
+
+            result = json.loads(response_text)
+
+            # Validate required fields
+            required_fields = ["why_detected", "spread_pattern", "threat_signal", "suggested_title", "analyst_note"]
+            for field in required_fields:
+                if field not in result:
+                    result[field] = ""
+
+            # Validate threat_signal value
+            if result.get("threat_signal") not in ["none", "low", "medium", "high"]:
+                result["threat_signal"] = "low"
+
+            logger.info("ai_summary_generated", cluster_title=cluster.get("title", "")[:50])
+            return result
+
+        except json.JSONDecodeError as e:
+            logger.warning("ai_summary_json_error", error=str(e), response=response_text[:200] if response_text else "")
+            return None
+        except Exception as e:
+            error_str = str(e)
+            if "credit" in error_str.lower() or "billing" in error_str.lower():
+                logger.warning("ai_summary_credits_exhausted")
+            else:
+                logger.error("ai_summary_error", error=error_str)
+            return None
+
+    # =========================================================================
+    # STEP 4: SAVE NARRATIVES
     # =========================================================================
 
     def save_narrative(self, cluster: Dict[str, Any]) -> Optional[int]:
         """
         Save a cluster as a narrative and link articles.
+        Generates AI summary before persisting.
 
         Returns narrative ID.
         """
@@ -682,18 +809,25 @@ Rules:
             f"Topic: {cluster.get('topic', 'Other')}."
         )
 
+        # Generate AI summary for analyst review
+        ai_summary = self.generate_ai_summary(cluster)
+        ai_summary_json = json.dumps(ai_summary) if ai_summary else None
+        ai_summary_generated_at = datetime.utcnow() if ai_summary else None
+
         with get_db() as db:
-            # Insert narrative
+            # Insert narrative with PENDING_REVIEW status for analyst approval
             result = db.execute(text("""
                 INSERT INTO narratives (
                     name, description, keywords, status, threat_level,
                     first_seen, last_seen, article_count, telegram_count,
-                    avg_sentiment, source_breakdown, auto_generated
+                    avg_sentiment, source_breakdown, auto_generated,
+                    ai_summary, ai_summary_generated_at
                 )
                 VALUES (
-                    :name, :description, :keywords, 'ACTIVE', :threat_level,
+                    :name, :description, :keywords, 'PENDING_REVIEW', :threat_level,
                     :first_seen, :last_seen, :article_count, :telegram_count,
-                    :avg_sentiment, :source_breakdown, true
+                    :avg_sentiment, :source_breakdown, true,
+                    :ai_summary, :ai_summary_generated_at
                 )
                 RETURNING id
             """), {
@@ -707,6 +841,8 @@ Rules:
                 "telegram_count": telegram_count,
                 "avg_sentiment": avg_sentiment,
                 "source_breakdown": json.dumps(dict(source_counts)),
+                "ai_summary": ai_summary_json,
+                "ai_summary_generated_at": ai_summary_generated_at,
             })
 
             narrative_id = result.fetchone()[0]

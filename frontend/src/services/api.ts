@@ -176,6 +176,12 @@ export const narrativesApi = {
     status?: string
     threatLevel?: string
   }) => api.put(`/narratives/${id}`, data),
+  delete: (id: number) => api.delete(`/narratives/${id}`),
+  // Pending review workflow
+  getPendingCount: () => api.get<{ count: number }>('/narratives/pending-count'),
+  getPending: (params?: { page?: number; size?: number }) =>
+    api.get('/narratives/pending', { params }),
+  approve: (id: number, title?: string) => api.patch(`/narratives/${id}/approve`, title ? { title } : {}),
   // Fact-checks
   getFactChecks: (narrativeId: number) =>
     api.get(`/narratives/${narrativeId}/fact-checks`),

@@ -310,7 +310,7 @@ Sample headlines:
                           f"Dominant sentiment: {dominant_sentiment or 'Unknown'} ({sentiment_ratio:.0%}). "
                           f"Keywords: {', '.join(keywords)}",
             "keywords": keywords,
-            "status": "ACTIVE",
+            "status": "PENDING_REVIEW",  # Requires analyst approval before appearing in main feed
             "threat_level": threat_level,
             "first_seen": first_seen,
             "last_seen": last_seen,
@@ -346,12 +346,12 @@ Sample headlines:
                     "last_seen": narrative["last_seen"],
                 })
             else:
-                # Insert new narrative
+                # Insert new narrative with PENDING_REVIEW status and auto_generated flag
                 result = db.execute(text("""
                     INSERT INTO narratives (name, description, keywords, status, threat_level,
-                                           first_seen, last_seen, article_count)
+                                           first_seen, last_seen, article_count, auto_generated)
                     VALUES (:name, :description, :keywords, :status, :threat_level,
-                            :first_seen, :last_seen, :article_count)
+                            :first_seen, :last_seen, :article_count, true)
                     ON CONFLICT (name) DO UPDATE SET
                         article_count = :article_count,
                         last_seen = :last_seen,

@@ -18,5 +18,6 @@ public record NarrativeDTO(
         Integer coordinationEventCount,
         Integer factCheckCount,
         Boolean hasFactChecks,
-        Instant createdAt
+        Instant createdAt,
+        AiSummaryDTO aiSummary
 ) {}

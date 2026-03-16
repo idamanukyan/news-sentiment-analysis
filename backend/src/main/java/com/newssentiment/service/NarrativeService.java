@@ -1,5 +1,8 @@
 package com.newssentiment.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.newssentiment.dto.AiSummaryDTO;
 import com.newssentiment.dto.NarrativeCreateRequest;
 import com.newssentiment.dto.NarrativeDTO;
 import com.newssentiment.model.Narrative;
@@ -33,14 +36,42 @@ public class NarrativeService {
     private final ArticleRepository articleRepository;
     private final CoordinationEventRepository coordinationEventRepository;
     private final FactCheckRepository factCheckRepository;
+    private final ObjectMapper objectMapper;
 
     private Long getOrgId() {
         return OrganizationContext.getCurrentOrganizationIdOrNull();
     }
 
+    /**
+     * Find all narratives excluding PENDING_REVIEW (default view).
+     */
     @Transactional(readOnly = true)
     public Page<NarrativeDTO> findAll(Pageable pageable) {
+        return narrativeRepository.findByOrganizationIdExcludingPendingReview(getOrgId(), pageable).map(this::toDTO);
+    }
+
+    /**
+     * Find all narratives including PENDING_REVIEW (for admin views).
+     */
+    @Transactional(readOnly = true)
+    public Page<NarrativeDTO> findAllIncludingPending(Pageable pageable) {
         return narrativeRepository.findByOrganizationId(getOrgId(), pageable).map(this::toDTO);
+    }
+
+    /**
+     * Find narratives pending review.
+     */
+    @Transactional(readOnly = true)
+    public Page<NarrativeDTO> findPendingReview(Pageable pageable) {
+        return narrativeRepository.findByOrganizationIdAndPendingReview(getOrgId(), pageable).map(this::toDTO);
+    }
+
+    /**
+     * Count narratives pending review.
+     */
+    @Transactional(readOnly = true)
+    public long countPendingReview() {
+        return narrativeRepository.countByOrganizationIdAndPendingReview(getOrgId());
     }
 
     @Transactional(readOnly = true)
@@ -106,6 +137,37 @@ public class NarrativeService {
                 });
     }
 
+    /**
+     * Approve a pending narrative, changing status from PENDING_REVIEW to ACTIVE.
+     * Optionally updates the title if provided.
+     * @param id Narrative ID
+     * @param newTitle Optional new title (can be null to keep existing)
+     * @return the approved narrative, or empty if not found
+     * @throws IllegalStateException if narrative is not in PENDING_REVIEW status
+     */
+    @Transactional
+    public Optional<NarrativeDTO> approve(Long id, String newTitle) {
+        return narrativeRepository.findByIdAndOrganizationId(id, getOrgId())
+                .map(narrative -> {
+                    if (narrative.getStatus() == NarrativeStatus.ACTIVE) {
+                        // Already active - idempotent, just return it
+                        return toDTO(narrative);
+                    }
+                    if (narrative.getStatus() != NarrativeStatus.PENDING_REVIEW) {
+                        throw new IllegalStateException(
+                            "Cannot approve narrative with status " + narrative.getStatus() +
+                            ". Only PENDING_REVIEW narratives can be approved.");
+                    }
+                    narrative.setStatus(NarrativeStatus.ACTIVE);
+                    // Update title if provided
+                    if (newTitle != null && !newTitle.trim().isEmpty()) {
+                        narrative.setName(newTitle.trim());
+                    }
+                    log.info("Narrative '{}' (id={}) approved and set to ACTIVE", narrative.getName(), id);
+                    return toDTO(narrativeRepository.save(narrative));
+                });
+    }
+
     @Transactional
     public void delete(Long id) {
         narrativeRepository.findByIdAndOrganizationId(id, getOrgId())
@@ -129,6 +191,8 @@ public class NarrativeService {
 
     /**
      * Update article counts for all narratives based on keyword matches.
+     * Includes both ACTIVE and PENDING_REVIEW narratives so counts are
+     * accurate when analysts review pending narratives.
      * Called periodically by scheduler.
      */
     @Transactional
@@ -136,9 +200,14 @@ public class NarrativeService {
         log.info("Updating narrative article counts...");
         Instant since = Instant.now().minus(7, ChronoUnit.DAYS);
 
+        // Update both ACTIVE and PENDING_REVIEW narratives
         List<Narrative> activeNarratives = narrativeRepository.findByStatus(NarrativeStatus.ACTIVE);
+        List<Narrative> pendingNarratives = narrativeRepository.findByStatus(NarrativeStatus.PENDING_REVIEW);
 
-        for (Narrative narrative : activeNarratives) {
+        List<Narrative> allNarratives = new java.util.ArrayList<>(activeNarratives);
+        allNarratives.addAll(pendingNarratives);
+
+        for (Narrative narrative : allNarratives) {
             String[] keywords = narrative.getKeywords();
             if (keywords == null || keywords.length == 0) {
                 continue;
@@ -159,7 +228,8 @@ public class NarrativeService {
             log.debug("Narrative '{}': {} articles (was: {})", narrative.getName(), count, previousCount);
         }
 
-        log.info("Updated {} narrative counts", activeNarratives.size());
+        log.info("Updated {} narrative counts (active: {}, pending: {})",
+                allNarratives.size(), activeNarratives.size(), pendingNarratives.size());
     }
 
     @Transactional(readOnly = true)
@@ -196,6 +266,16 @@ public class NarrativeService {
         int factCheckCount = (int) factCheckRepository.countByNarrativeId(narrative.getId());
         boolean hasFactChecks = factCheckCount > 0;
 
+        // Parse AI summary if present
+        AiSummaryDTO aiSummary = null;
+        if (narrative.getAiSummary() != null && !narrative.getAiSummary().isEmpty()) {
+            try {
+                aiSummary = objectMapper.readValue(narrative.getAiSummary(), AiSummaryDTO.class);
+            } catch (JsonProcessingException e) {
+                log.warn("Failed to parse AI summary for narrative {}: {}", narrative.getId(), e.getMessage());
+            }
+        }
+
         return new NarrativeDTO(
                 narrative.getId(),
                 narrative.getName(),
@@ -211,7 +291,8 @@ public class NarrativeService {
                 coordinationCount,
                 factCheckCount,
                 hasFactChecks,
-                narrative.getCreatedAt()
+                narrative.getCreatedAt(),
+                aiSummary
         );
     }
 }

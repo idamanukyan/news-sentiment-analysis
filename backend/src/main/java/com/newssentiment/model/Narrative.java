@@ -61,11 +61,18 @@ public class Narrative {
     @Column(name = "updated_at")
     private Instant updatedAt;
 
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "ai_summary", columnDefinition = "jsonb")
+    private String aiSummary;
+
+    @Column(name = "ai_summary_generated_at")
+    private Instant aiSummaryGeneratedAt;
+
     @OneToMany(mappedBy = "narrative", fetch = FetchType.LAZY)
     private List<ThreatAlert> alerts;
 
     public enum NarrativeStatus {
-        ACTIVE, MONITORING, RESOLVED, ARCHIVED
+        ACTIVE, MONITORING, RESOLVED, ARCHIVED, PENDING_REVIEW
     }
 
     public enum ThreatLevel {

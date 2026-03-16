@@ -1,6 +1,7 @@
 package com.newssentiment.controller;
 
 import com.newssentiment.dto.ArticleDTO;
+import com.newssentiment.dto.NarrativeApproveRequest;
 import com.newssentiment.dto.NarrativeCreateRequest;
 import com.newssentiment.dto.NarrativeDTO;
 import com.newssentiment.model.Article;
@@ -92,6 +93,44 @@ public class NarrativeController {
         return narrativeService.updateThreatLevel(id, ThreatLevel.valueOf(level.toUpperCase()))
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Approve a pending narrative, changing its status from PENDING_REVIEW to ACTIVE.
+     * Optionally accepts a new title in the request body.
+     * Returns 409 Conflict if the narrative is not in PENDING_REVIEW status (unless already ACTIVE).
+     */
+    @PatchMapping("/{id}/approve")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ORG_ADMIN', 'ANALYST')")
+    public ResponseEntity<?> approveNarrative(
+            @PathVariable Long id,
+            @RequestBody(required = false) NarrativeApproveRequest request) {
+        try {
+            String newTitle = request != null ? request.title() : null;
+            return narrativeService.approve(id, newTitle)
+                    .map(ResponseEntity::ok)
+                    .orElse(ResponseEntity.notFound().build());
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(e.getMessage());
+        }
+    }
+
+    /**
+     * Get narratives pending review.
+     */
+    @GetMapping("/pending")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ORG_ADMIN', 'ANALYST')")
+    public ResponseEntity<Page<NarrativeDTO>> getPendingNarratives(
+            @PageableDefault(size = 20) Pageable pageable) {
+        return ResponseEntity.ok(narrativeService.findPendingReview(pageable));
+    }
+
+    /**
+     * Get count of narratives pending review.
+     */
+    @GetMapping("/pending-count")
+    public ResponseEntity<java.util.Map<String, Long>> getPendingCount() {
+        return ResponseEntity.ok(java.util.Map.of("count", narrativeService.countPendingReview()));
     }
 
     @DeleteMapping("/{id}")

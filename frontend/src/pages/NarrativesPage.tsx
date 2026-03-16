@@ -24,7 +24,17 @@ import {
   Shield,
   Link,
   Trash2,
+  Bot,
+  Check,
 } from 'lucide-react'
+
+interface AiSummary {
+  whyDetected: string
+  spreadPattern: string
+  threatSignal: 'none' | 'low' | 'medium' | 'high'
+  suggestedTitle: string
+  analystNote: string
+}
 
 interface Narrative {
   id: number
@@ -42,6 +52,7 @@ interface Narrative {
   firstSeen: string
   lastSeen: string
   createdAt: string
+  aiSummary: AiSummary | null
 }
 
 interface FactCheck {
@@ -139,10 +150,27 @@ function StatusBadge({ status }: { status: string }) {
     MONITORING: 'badge-yellow',
     RESOLVED: 'badge-gray',
     ARCHIVED: 'badge-gray',
+    PENDING_REVIEW: 'bg-amber-100 text-amber-700',
   }
+  const displayName = status === 'PENDING_REVIEW' ? 'Pending Review' : status
   return (
     <span className={`badge ${config[status] || 'badge-gray'}`}>
-      {status}
+      {displayName}
+    </span>
+  )
+}
+
+function ThreatSignalBadge({ signal }: { signal: string }) {
+  const config: Record<string, { className: string; label: string }> = {
+    none: { className: 'bg-gray-100 text-gray-600', label: 'No threat' },
+    low: { className: 'bg-blue-100 text-blue-700', label: 'Low' },
+    medium: { className: 'bg-amber-100 text-amber-700', label: 'Medium' },
+    high: { className: 'bg-red-100 text-red-700', label: 'High' },
+  }
+  const { className, label } = config[signal] || config.none
+  return (
+    <span className={`px-2 py-0.5 text-xs font-medium rounded ${className}`}>
+      {label}
     </span>
   )
 }
@@ -195,20 +223,83 @@ function formatRelativeTime(dateString: string): string {
 export default function NarrativesPage() {
   const canEditNarratives = useAuthStore((state) => state.canEditNarratives)
   const canEdit = canEditNarratives()
+  const queryClient = useQueryClient()
 
   const [selectedNarrative, setSelectedNarrative] = useState<Narrative | null>(null)
   const [filter, setFilter] = useState<'all' | 'active' | 'high'>('all')
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [viewMode, setViewMode] = useState<'active' | 'pending'>('active')
+  const [editedTitles, setEditedTitles] = useState<Record<number, string>>({})
 
+  // Query for active narratives (default view)
   const { data: narrativesData, isLoading } = useQuery({
     queryKey: ['narratives'],
     queryFn: async () => {
       const res = await narrativesApi.getAll()
       return res.data
     },
+    enabled: viewMode === 'active',
   })
 
-  const narratives: Narrative[] = narrativesData?.content || []
+  // Query for pending narratives
+  const { data: pendingData, isLoading: isLoadingPending } = useQuery({
+    queryKey: ['narratives-pending'],
+    queryFn: async () => {
+      const res = await narrativesApi.getPending()
+      return res.data
+    },
+    enabled: viewMode === 'pending',
+  })
+
+  // Query for pending count (always fetch)
+  const { data: pendingCountData } = useQuery({
+    queryKey: ['narratives-pending-count'],
+    queryFn: async () => {
+      const res = await narrativesApi.getPendingCount()
+      return res.data
+    },
+    refetchInterval: 60000, // Refresh every minute
+  })
+
+  const pendingCount = pendingCountData?.count || 0
+
+  // Approve mutation
+  const approveMutation = useMutation({
+    mutationFn: ({ id, title }: { id: number; title?: string }) => narrativesApi.approve(id, title),
+    onSuccess: (_, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['narratives'] })
+      queryClient.invalidateQueries({ queryKey: ['narratives-pending'] })
+      queryClient.invalidateQueries({ queryKey: ['narratives-pending-count'] })
+      // Clean up edited title
+      setEditedTitles((prev) => {
+        const next = { ...prev }
+        delete next[id]
+        return next
+      })
+      toast.success('Narrative approved and added to feed')
+    },
+    onError: () => {
+      toast.error('Failed to approve narrative')
+    },
+  })
+
+  // Delete mutation
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => narrativesApi.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['narratives'] })
+      queryClient.invalidateQueries({ queryKey: ['narratives-pending'] })
+      queryClient.invalidateQueries({ queryKey: ['narratives-pending-count'] })
+      toast.success('Narrative dismissed')
+    },
+    onError: () => {
+      toast.error('Failed to delete narrative')
+    },
+  })
+
+  const narratives: Narrative[] = viewMode === 'active'
+    ? (narrativesData?.content || [])
+    : (pendingData?.content || [])
 
   const filteredNarratives = narratives.filter((n) => {
     if (filter === 'active') return n.status === 'ACTIVE'
@@ -222,8 +313,10 @@ export default function NarrativesPage() {
   ).length
   const totalArticles = narratives.reduce((sum, n) => sum + (n.articleCount || 0), 0)
 
+  const isCurrentlyLoading = viewMode === 'active' ? isLoading : isLoadingPending
+
   // Loading state with skeletons
-  if (isLoading) {
+  if (isCurrentlyLoading) {
     return (
       <div className="space-y-6">
         {/* Stats skeleton */}
@@ -252,6 +345,31 @@ export default function NarrativesPage() {
 
   return (
     <div className="space-y-6">
+      {/* Pending Review Banner */}
+      {pendingCount > 0 && viewMode === 'active' && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-amber-100 rounded-lg">
+              <Bot size={20} className="text-amber-600" />
+            </div>
+            <div>
+              <p className="font-medium text-amber-800">
+                {pendingCount} AI-suggested narrative{pendingCount !== 1 ? 's' : ''} pending review
+              </p>
+              <p className="text-sm text-amber-600">
+                Review and approve or dismiss auto-detected narratives
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setViewMode('pending')}
+            className="btn btn-sm bg-amber-600 text-white hover:bg-amber-700"
+          >
+            Review Now
+          </button>
+        </div>
+      )}
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <div className="card p-4">
@@ -300,31 +418,68 @@ export default function NarrativesPage() {
         </div>
       </div>
 
+      {/* View Mode Toggle */}
+      <div className="flex items-center gap-4 border-b pb-4">
+        <button
+          onClick={() => setViewMode('active')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+            viewMode === 'active'
+              ? 'bg-primary-100 text-primary-700'
+              : 'text-gray-600 hover:bg-gray-100'
+          }`}
+        >
+          <Activity size={16} />
+          Active Narratives
+        </button>
+        <button
+          onClick={() => setViewMode('pending')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-colors ${
+            viewMode === 'pending'
+              ? 'bg-amber-100 text-amber-700'
+              : 'text-gray-600 hover:bg-gray-100'
+          }`}
+        >
+          <Bot size={16} />
+          Pending Review
+          {pendingCount > 0 && (
+            <span className="px-2 py-0.5 bg-amber-500 text-white text-xs rounded-full">
+              {pendingCount}
+            </span>
+          )}
+        </button>
+      </div>
+
       {/* Filters and Actions */}
       <div className="flex items-center justify-between">
-        <div className="flex gap-2">
-          <button
-            onClick={() => setFilter('all')}
-            className={`btn btn-sm ${filter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
-          >
-            All ({narratives.length})
-          </button>
-          <button
-            onClick={() => setFilter('active')}
-            className={`btn btn-sm ${filter === 'active' ? 'btn-primary' : 'btn-secondary'}`}
-          >
-            Active ({activeCount})
-          </button>
-          <button
-            onClick={() => setFilter('high')}
-            className={`btn btn-sm ${filter === 'high' ? 'bg-red-600 text-white hover:bg-red-700' : 'btn-secondary'}`}
-          >
-            <AlertTriangle size={14} />
-            High Threat ({highThreatCount})
-          </button>
-        </div>
+        {viewMode === 'active' ? (
+          <div className="flex gap-2">
+            <button
+              onClick={() => setFilter('all')}
+              className={`btn btn-sm ${filter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
+            >
+              All ({narratives.length})
+            </button>
+            <button
+              onClick={() => setFilter('active')}
+              className={`btn btn-sm ${filter === 'active' ? 'btn-primary' : 'btn-secondary'}`}
+            >
+              Active ({activeCount})
+            </button>
+            <button
+              onClick={() => setFilter('high')}
+              className={`btn btn-sm ${filter === 'high' ? 'bg-red-600 text-white hover:bg-red-700' : 'btn-secondary'}`}
+            >
+              <AlertTriangle size={14} />
+              High Threat ({highThreatCount})
+            </button>
+          </div>
+        ) : (
+          <div className="text-sm text-gray-600">
+            AI-suggested narratives awaiting your review
+          </div>
+        )}
 
-        {canEdit && (
+        {canEdit && viewMode === 'active' && (
           <button
             onClick={() => setShowCreateModal(true)}
             className="btn btn-primary"
@@ -340,27 +495,79 @@ export default function NarrativesPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
           {filteredNarratives.map((narrative) => {
             const isHighThreat = narrative.threatLevel === 'HIGH' || narrative.threatLevel === 'CRITICAL'
+            const isPending = viewMode === 'pending' || narrative.status === 'PENDING_REVIEW'
 
             return (
               <div
                 key={narrative.id}
-                onClick={() => setSelectedNarrative(narrative)}
-                className={`card p-5 cursor-pointer transition-all hover:shadow-md ${
-                  isHighThreat ? 'border-red-200 hover:border-red-400' : 'hover:border-primary-400'
+                onClick={() => !isPending && setSelectedNarrative(narrative)}
+                className={`card p-5 transition-all hover:shadow-md ${
+                  isPending
+                    ? 'border-amber-300 bg-amber-50/30 cursor-default'
+                    : isHighThreat
+                    ? 'border-red-200 hover:border-red-400 cursor-pointer'
+                    : 'hover:border-primary-400 cursor-pointer'
                 }`}
               >
-                {/* Header */}
+                {/* AI Suggested Badge for pending */}
+                {isPending && (
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded flex items-center gap-1">
+                      <Bot size={10} />
+                      AI Suggested
+                    </span>
+                  </div>
+                )}
+
+                {/* Header - Editable title for pending */}
                 <div className="flex items-start justify-between mb-2">
-                  <h3 className="text-base font-semibold text-gray-900 line-clamp-2 flex-1 mr-2">
-                    {narrative.name}
-                  </h3>
+                  {isPending ? (
+                    <input
+                      type="text"
+                      value={editedTitles[narrative.id] ?? (narrative.aiSummary?.suggestedTitle || narrative.name)}
+                      onChange={(e) => {
+                        e.stopPropagation()
+                        setEditedTitles((prev) => ({ ...prev, [narrative.id]: e.target.value }))
+                      }}
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex-1 mr-2 px-2 py-1 text-base font-semibold text-gray-900 border border-amber-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+                      placeholder="Narrative title..."
+                    />
+                  ) : (
+                    <h3 className="text-base font-semibold text-gray-900 line-clamp-2 flex-1 mr-2">
+                      {narrative.name}
+                    </h3>
+                  )}
                   <ThreatBadge level={narrative.threatLevel} />
                 </div>
 
-                {/* Status */}
-                <div className="mb-3">
-                  <StatusBadge status={narrative.status} />
-                </div>
+                {/* Status - hide for pending since we have the badge */}
+                {!isPending && (
+                  <div className="mb-3">
+                    <StatusBadge status={narrative.status} />
+                  </div>
+                )}
+
+                {/* AI Analysis Section for Pending */}
+                {isPending && narrative.aiSummary ? (
+                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-sm">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Bot size={14} className="text-amber-600" />
+                      <span className="font-medium text-amber-800">AI Analysis</span>
+                      <ThreatSignalBadge signal={narrative.aiSummary.threatSignal} />
+                    </div>
+                    <div className="space-y-1.5 text-gray-700">
+                      <p><span className="font-medium">Why detected:</span> {narrative.aiSummary.whyDetected}</p>
+                      <p><span className="font-medium">Spread:</span> {narrative.aiSummary.spreadPattern}</p>
+                      <p className="italic text-gray-600">{narrative.aiSummary.analystNote}</p>
+                    </div>
+                  </div>
+                ) : isPending && !narrative.aiSummary ? (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 text-sm text-gray-500 flex items-center gap-2">
+                    <Bot size={14} />
+                    AI analysis unavailable
+                  </div>
+                ) : null}
 
                 {/* Keywords */}
                 <div className="flex flex-wrap gap-1.5 mb-4">
@@ -409,13 +616,57 @@ export default function NarrativesPage() {
                   <Clock size={10} />
                   First detected {formatDate(narrative.firstSeen)}
                 </p>
+
+                {/* Approve/Delete Actions for Pending */}
+                {isPending && canEdit && (
+                  <div className="flex gap-2 mt-4 pt-4 border-t border-amber-200">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        const title = editedTitles[narrative.id] ?? (narrative.aiSummary?.suggestedTitle || narrative.name)
+                        approveMutation.mutate({ id: narrative.id, title })
+                      }}
+                      disabled={approveMutation.isPending}
+                      className="flex-1 btn btn-sm bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
+                    >
+                      <Check size={14} />
+                      Approve
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        if (confirm('Dismiss this AI-suggested narrative?')) {
+                          deleteMutation.mutate(narrative.id)
+                        }
+                      }}
+                      disabled={deleteMutation.isPending}
+                      className="flex-1 btn btn-sm bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+                    >
+                      <Trash2 size={14} />
+                      Dismiss
+                    </button>
+                  </div>
+                )}
               </div>
             )
           })}
         </div>
       ) : (
         <div className="empty-state py-16 card">
-          {filter !== 'all' ? (
+          {viewMode === 'pending' ? (
+            <div className="text-center">
+              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle size={32} className="text-green-600" />
+              </div>
+              <p className="empty-state-title">All caught up!</p>
+              <p className="empty-state-description max-w-md mx-auto">
+                No AI-suggested narratives pending review. New narratives will appear here when detected.
+              </p>
+              <button onClick={() => setViewMode('active')} className="btn btn-secondary mt-4">
+                View Active Narratives
+              </button>
+            </div>
+          ) : filter !== 'all' ? (
             <>
               <MessageSquare className="empty-state-icon" />
               <p className="empty-state-title">No matching narratives</p>
