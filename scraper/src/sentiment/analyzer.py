@@ -114,6 +114,11 @@ def analyze_batch_with_claude(articles: List[Dict[str, Any]]) -> List[Dict[str, 
         logger.warning("budget_exhausted_skipping_batch", article_count=len(articles))
         return []
 
+    # Check if API key is configured
+    if not settings.anthropic_api_key or len(settings.anthropic_api_key) < 10:
+        logger.error("anthropic_api_key_not_configured", message="ANTHROPIC_API_KEY is not set or too short")
+        return []
+
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
 
     # Format articles for the prompt
@@ -125,11 +130,21 @@ def analyze_batch_with_claude(articles: List[Dict[str, Any]]) -> List[Dict[str, 
     prompt = BATCH_ANALYSIS_PROMPT.format(articles=articles_text)
 
     # Using Haiku for cost optimization (~10x cheaper than Sonnet, sufficient for translation/sentiment/clustering)
-    message = client.messages.create(
-        model="claude-haiku-4-5-20251001",
-        max_tokens=1500,  # ~300 tokens per article in batch
-        messages=[{"role": "user", "content": prompt}]
-    )
+    try:
+        message = client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=1500,  # ~300 tokens per article in batch
+            messages=[{"role": "user", "content": prompt}]
+        )
+    except anthropic.AuthenticationError as e:
+        logger.error("anthropic_authentication_error", error=str(e), message="Check ANTHROPIC_API_KEY env var")
+        return []
+    except anthropic.APIStatusError as e:
+        logger.error("anthropic_api_error", status_code=e.status_code, error=str(e))
+        raise  # Re-raise for retry
+    except Exception as e:
+        logger.error("anthropic_unexpected_error", error=str(e), error_type=type(e).__name__)
+        raise  # Re-raise for retry
 
     # Track spending
     total_spend = add_spend(

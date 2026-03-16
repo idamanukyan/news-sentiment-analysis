@@ -163,7 +163,20 @@ def run_credibility_scoring_job():
 
 def main():
     """Main entry point for the scraper service."""
-    logger.info("starting_scraper_service", interval=settings.scrape_interval_minutes)
+    # Startup diagnostics - check API key configuration
+    has_anthropic_key = bool(settings.anthropic_api_key and len(settings.anthropic_api_key) > 10)
+    logger.info(
+        "starting_scraper_service",
+        interval=settings.scrape_interval_minutes,
+        anthropic_key_configured=has_anthropic_key,
+        anthropic_key_prefix=settings.anthropic_api_key[:15] + "..." if has_anthropic_key else "NOT SET"
+    )
+
+    if not has_anthropic_key:
+        logger.warning(
+            "anthropic_api_key_missing",
+            message="ANTHROPIC_API_KEY environment variable is not set. AI features will not work."
+        )
 
     # Run immediately on startup
     run_fetch_job()
