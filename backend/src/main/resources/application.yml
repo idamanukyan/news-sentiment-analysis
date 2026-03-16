@@ -84,7 +84,7 @@ server:
 # JWT Configuration
 jwt:
   secret: ${JWT_SECRET:your-256-bit-secret-key-change-in-production-min-32-chars}
-  expiration: ${JWT_EXPIRATION:86400000}
+  expiration: ${JWT_EXPIRATION:28800000}  # 8 hours
 
 # Application Configuration
 app:
