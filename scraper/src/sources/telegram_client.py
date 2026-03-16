@@ -1,5 +1,6 @@
 """Telegram channel monitoring client using Telethon."""
 import asyncio
+import base64
 import json
 import os
 from datetime import datetime, timezone, timedelta
@@ -30,6 +31,21 @@ CHANNELS_CONFIG_PATH = Path(__file__).parent.parent / "config" / "telegram_chann
 SESSION_PATH = Path(__file__).parent.parent.parent / "telegram_session"
 
 
+def _ensure_session_from_env():
+    """Load Telegram session from TELEGRAM_SESSION_BASE64 env var if present."""
+    session_b64 = os.environ.get('TELEGRAM_SESSION_BASE64')
+    if session_b64:
+        try:
+            SESSION_PATH.mkdir(parents=True, exist_ok=True)
+            session_file = SESSION_PATH / "aiim_telegram.session"
+            if not session_file.exists():
+                session_data = base64.b64decode(session_b64)
+                session_file.write_bytes(session_data)
+                structlog.get_logger().info("telegram_session_loaded_from_env")
+        except Exception as e:
+            structlog.get_logger().error("telegram_session_env_error", error=str(e))
+
+
 class TelegramMonitor:
     """Monitor Telegram channels for messages."""
 
@@ -40,6 +56,9 @@ class TelegramMonitor:
         bot_token: Optional[str] = None,
         session_name: str = "aiim_telegram"
     ):
+        # Load session from env var if available (for cloud deployment)
+        _ensure_session_from_env()
+
         settings = get_settings()
         self.api_id = api_id or settings.telegram_api_id
         self.api_hash = api_hash or settings.telegram_api_hash

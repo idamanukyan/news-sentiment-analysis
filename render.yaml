@@ -1,0 +1,71 @@
+services:
+  # Backend API + Frontend (combined)
+  - type: web
+    name: aiim-csgt
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: aiim
+          property: host
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_NAME
+        fromDatabase:
+          name: aiim
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: aiim
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: aiim
+          property: password
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: https://aiim-csgt.onrender.com
+
+  # Scraper Background Worker
+  - type: worker
+    name: aiim-scraper
+    runtime: docker
+    dockerfilePath: ./scraper/Dockerfile
+    rootDir: ./scraper
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: aiim
+          property: host
+      - key: DB_PORT
+        value: "5432"
+      - key: DB_NAME
+        fromDatabase:
+          name: aiim
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: aiim
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: aiim
+          property: password
+      - key: TELEGRAM_API_ID
+        value: "35122309"
+      - key: TELEGRAM_API_HASH
+        value: "a16a1da2bb62d2a62cd5da4f2fcf9ee2"
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      - key: NEWSAPI_KEY
+        sync: false
+      - key: TELEGRAM_SESSION_BASE64
+        sync: false
+
+databases:
+  - name: aiim
+    plan: starter
