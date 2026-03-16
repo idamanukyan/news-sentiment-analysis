@@ -486,13 +486,13 @@ function NewThreadModal({
 
   const { data: narratives = [] } = useQuery<{ id: number; name: string }[]>({
     queryKey: ['narratives'],
-    queryFn: () => narrativesApi.getAll({}).then(r => r.data),
+    queryFn: () => narrativesApi.getAll({}).then(r => r.data.content),
     enabled: discussionType === 'NARRATIVE',
   })
 
   const { data: alerts = [] } = useQuery<{ id: number; title: string }[]>({
     queryKey: ['alerts-for-discussion'],
-    queryFn: () => alertsApi.getAll({}).then(r => r.data),
+    queryFn: () => alertsApi.getAll({}).then(r => r.data.content),
     enabled: discussionType === 'ALERT',
   })
 
