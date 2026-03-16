@@ -425,12 +425,12 @@ export default function NarrativesPage() {
               </button>
             </>
           ) : (
-            <>
+            <div className="text-center">
               <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <MessageSquare size={32} className="text-purple-600" />
               </div>
               <p className="empty-state-title">No narratives yet</p>
-              <p className="empty-state-description max-w-md">
+              <p className="empty-state-description max-w-md mx-auto">
                 Narratives help you track disinformation campaigns by monitoring keyword patterns across news sources.
                 Create your first narrative to start monitoring.
               </p>
@@ -440,7 +440,7 @@ export default function NarrativesPage() {
                   Create First Narrative
                 </button>
               )}
-            </>
+            </div>
           )}
         </div>
       )}
