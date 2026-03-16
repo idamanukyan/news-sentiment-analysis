@@ -274,12 +274,12 @@ export default function TopicsPage() {
       {/* Topics List */}
       {topics?.length === 0 ? (
         <div className="card">
-          <div className="empty-state py-16">
-            <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Tags size={32} className="text-blue-600" />
+          <div className="empty-state py-16 text-center">
+            <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Tags size={32} className="text-blue-600 dark:text-blue-400" />
             </div>
             <p className="empty-state-title">No topics yet</p>
-            <p className="empty-state-description max-w-md">
+            <p className="empty-state-description max-w-md mx-auto">
               Topics let you track specific subjects across worldwide news sources.
               Create a topic with keywords to automatically collect and analyze relevant articles.
             </p>
