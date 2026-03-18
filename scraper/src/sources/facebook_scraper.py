@@ -44,10 +44,11 @@ def parse_cookie_string(cookie_string: str) -> Dict[str, str]:
 
     cookie_string = cookie_string.strip()
     first_char = cookie_string[0] if cookie_string else ''
-    logger.info("cookie_parse_attempt",
-                length=len(cookie_string),
-                first_char=first_char,
-                first_50=cookie_string[:50])
+    # Use WARNING level to ensure visibility regardless of LOG_LEVEL setting
+    logger.warning("cookie_parse_attempt",
+                   length=len(cookie_string),
+                   first_char=first_char,
+                   first_50=cookie_string[:50])
 
     # Try JSON format first
     if cookie_string.startswith('{'):
@@ -62,7 +63,7 @@ def parse_cookie_string(cookie_string: str) -> Dict[str, str]:
     if cookie_string.startswith('['):
         try:
             cookie_list = json.loads(cookie_string)
-            logger.info("cookie_parse_json_array", items=len(cookie_list))
+            logger.warning("cookie_parse_json_array", items=len(cookie_list))
             cookies = {}
             for cookie in cookie_list:
                 if isinstance(cookie, dict) and 'name' in cookie and 'value' in cookie:
@@ -71,7 +72,7 @@ def parse_cookie_string(cookie_string: str) -> Dict[str, str]:
                     if 'facebook.com' in domain or not domain:
                         cookies[cookie['name']] = cookie['value']
                         logger.debug("cookie_extracted", name=cookie['name'], domain=domain)
-            logger.info("cookie_parse_json_array_result", count=len(cookies), keys=list(cookies.keys()))
+            logger.warning("cookie_parse_json_array_result", count=len(cookies), keys=list(cookies.keys()))
             return cookies
         except json.JSONDecodeError as e:
             logger.warning("cookie_parse_json_array_failed", error=str(e))
