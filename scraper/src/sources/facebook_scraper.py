@@ -39,21 +39,30 @@ def parse_cookie_string(cookie_string: str) -> Dict[str, str]:
     - Browser format: c_user=123; xs=abc; datr=xyz
     """
     if not cookie_string:
+        logger.debug("cookie_parse_empty_input")
         return {}
 
     cookie_string = cookie_string.strip()
+    first_char = cookie_string[0] if cookie_string else ''
+    logger.info("cookie_parse_attempt",
+                length=len(cookie_string),
+                first_char=first_char,
+                first_50=cookie_string[:50])
 
     # Try JSON format first
     if cookie_string.startswith('{'):
         try:
-            return json.loads(cookie_string)
-        except json.JSONDecodeError:
-            pass
+            result = json.loads(cookie_string)
+            logger.info("cookie_parse_json_object", count=len(result))
+            return result
+        except json.JSONDecodeError as e:
+            logger.warning("cookie_parse_json_object_failed", error=str(e))
 
     # Try JSON array format (from browser cookie exporters)
     if cookie_string.startswith('['):
         try:
             cookie_list = json.loads(cookie_string)
+            logger.info("cookie_parse_json_array", items=len(cookie_list))
             cookies = {}
             for cookie in cookie_list:
                 if isinstance(cookie, dict) and 'name' in cookie and 'value' in cookie:
@@ -61,9 +70,11 @@ def parse_cookie_string(cookie_string: str) -> Dict[str, str]:
                     domain = cookie.get('domain', '')
                     if 'facebook.com' in domain or not domain:
                         cookies[cookie['name']] = cookie['value']
+                        logger.debug("cookie_extracted", name=cookie['name'], domain=domain)
+            logger.info("cookie_parse_json_array_result", count=len(cookies), keys=list(cookies.keys()))
             return cookies
-        except json.JSONDecodeError:
-            pass
+        except json.JSONDecodeError as e:
+            logger.warning("cookie_parse_json_array_failed", error=str(e))
 
     # Parse browser cookie format
     cookies = {}
@@ -73,6 +84,7 @@ def parse_cookie_string(cookie_string: str) -> Dict[str, str]:
             key, value = part.split('=', 1)
             cookies[key.strip()] = value.strip()
 
+    logger.info("cookie_parse_browser_format", count=len(cookies))
     return cookies
 
 # User agents for rotation to avoid blocking
