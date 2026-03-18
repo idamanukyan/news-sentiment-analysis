@@ -26,6 +26,7 @@ from playwright.sync_api import sync_playwright, TimeoutError as PlaywrightTimeo
 from ..models import Article, Source
 from ..config import get_settings
 from ..database import get_db
+from .web_scraper import scrape_web_source
 
 logger = structlog.get_logger()
 settings = get_settings()
@@ -976,7 +977,49 @@ def fetch_all_facebook_sources() -> int:
                     # Fetch posts (pass full URL for profile.php pages)
                     posts = scraper.scrape_page(page_name, source_id=source.id, page_url=page_url)
 
+                    # If Facebook scraping failed, try website fallback
                     if not posts:
+                        config = source.config or {}
+                        website_url = config.get('website_url')
+                        if website_url:
+                            logger.info("facebook_fallback_to_website",
+                                       source=source.name,
+                                       website_url=website_url)
+                            # Create a temporary source object for web scraping
+                            import asyncio
+                            from copy import copy
+                            temp_source = copy(source)
+                            temp_source.url = website_url
+                            try:
+                                articles = asyncio.run(scrape_web_source(temp_source))
+                                if articles:
+                                    for article in articles:
+                                        # Check for duplicates
+                                        existing = db.query(Article).filter(
+                                            Article.external_id == article.external_id
+                                        ).first()
+                                        if not existing and article.content_hash:
+                                            existing = db.query(Article).filter(
+                                                Article.content_hash == article.content_hash,
+                                                Article.source_id == source.id
+                                            ).first()
+                                        if not existing:
+                                            db.add(article)
+                                            saved_count = saved_count + 1 if 'saved_count' in dir() else 1
+                                    source.last_fetched = datetime.now(timezone.utc)
+                                    source.last_success = datetime.now(timezone.utc)
+                                    db.commit()
+                                    total_saved += saved_count if 'saved_count' in dir() else 0
+                                    sources_processed += 1
+                                    logger.info("facebook_website_fallback_success",
+                                               source=source.name,
+                                               saved=len(articles))
+                                    continue
+                            except Exception as e:
+                                logger.warning("facebook_website_fallback_failed",
+                                              source=source.name,
+                                              error=str(e))
+
                         logger.debug("facebook_no_posts", page=page_name)
                         sources_failed += 1
                         continue
