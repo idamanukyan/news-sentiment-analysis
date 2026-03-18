@@ -34,7 +34,8 @@ def parse_cookie_string(cookie_string: str) -> Dict[str, str]:
     """Parse cookie string into dictionary.
 
     Supports formats:
-    - JSON: {"c_user": "123", "xs": "abc"}
+    - JSON object: {"c_user": "123", "xs": "abc"}
+    - JSON array (browser extension export): [{"name": "c_user", "value": "123"}, ...]
     - Browser format: c_user=123; xs=abc; datr=xyz
     """
     if not cookie_string:
@@ -46,6 +47,21 @@ def parse_cookie_string(cookie_string: str) -> Dict[str, str]:
     if cookie_string.startswith('{'):
         try:
             return json.loads(cookie_string)
+        except json.JSONDecodeError:
+            pass
+
+    # Try JSON array format (from browser cookie exporters)
+    if cookie_string.startswith('['):
+        try:
+            cookie_list = json.loads(cookie_string)
+            cookies = {}
+            for cookie in cookie_list:
+                if isinstance(cookie, dict) and 'name' in cookie and 'value' in cookie:
+                    # Only use facebook.com cookies
+                    domain = cookie.get('domain', '')
+                    if 'facebook.com' in domain or not domain:
+                        cookies[cookie['name']] = cookie['value']
+            return cookies
         except json.JSONDecodeError:
             pass
 
@@ -92,7 +108,18 @@ class FacebookScraper:
         if self.has_cookies:
             for name, value in self.cookies.items():
                 self.session.cookies.set(name, value, domain='.facebook.com')
-            logger.info("facebook_cookies_loaded", cookie_count=len(self.cookies))
+            # Log which essential cookies we have
+            essential_cookies = ['c_user', 'xs', 'datr', 'fr', 'sb']
+            found_essential = [c for c in essential_cookies if c in self.cookies]
+            logger.info("facebook_cookies_loaded",
+                       cookie_count=len(self.cookies),
+                       essential_cookies=found_essential,
+                       has_c_user='c_user' in self.cookies,
+                       has_xs='xs' in self.cookies)
+        else:
+            logger.warning("facebook_cookies_not_configured",
+                          env_var_set=bool(settings.facebook_cookies),
+                          env_var_length=len(settings.facebook_cookies) if settings.facebook_cookies else 0)
 
     def _get_headers(self, authenticated: bool = False) -> Dict[str, str]:
         """Get request headers with rotating user agent."""
