@@ -65,6 +65,8 @@ services:
         sync: false
       - key: TELEGRAM_SESSION_BASE64
         sync: false
+      - key: FACEBOOK_COOKIES
+        sync: false
 
 databases:
   - name: aiim
