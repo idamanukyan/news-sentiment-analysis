@@ -993,9 +993,11 @@ def fetch_all_facebook_sources() -> int:
                             try:
                                 articles = asyncio.run(scrape_web_source(temp_source))
                                 if articles:
+                                    fallback_saved = 0
                                     for article in articles:
-                                        # Check for duplicates
+                                        # Check for duplicates by source_id + external_id (matches DB constraint)
                                         existing = db.query(Article).filter(
+                                            Article.source_id == source.id,
                                             Article.external_id == article.external_id
                                         ).first()
                                         if not existing and article.content_hash:
@@ -1005,20 +1007,23 @@ def fetch_all_facebook_sources() -> int:
                                             ).first()
                                         if not existing:
                                             db.add(article)
-                                            saved_count = saved_count + 1 if 'saved_count' in dir() else 1
+                                            fallback_saved += 1
                                     source.last_fetched = datetime.now(timezone.utc)
-                                    source.last_success = datetime.now(timezone.utc)
+                                    if fallback_saved > 0:
+                                        source.last_success = datetime.now(timezone.utc)
                                     db.commit()
-                                    total_saved += saved_count if 'saved_count' in dir() else 0
+                                    total_saved += fallback_saved
                                     sources_processed += 1
                                     logger.info("facebook_website_fallback_success",
                                                source=source.name,
-                                               saved=len(articles))
+                                               fetched=len(articles),
+                                               saved=fallback_saved)
                                     continue
                             except Exception as e:
                                 logger.warning("facebook_website_fallback_failed",
                                               source=source.name,
                                               error=str(e))
+                                db.rollback()
 
                         logger.debug("facebook_no_posts", page=page_name)
                         sources_failed += 1
