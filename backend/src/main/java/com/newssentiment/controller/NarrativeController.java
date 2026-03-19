@@ -215,4 +215,51 @@ public class NarrativeController {
         }
         return text.substring(0, maxLength);
     }
+
+    /**
+     * Diagnostic endpoint to debug why a narrative shows no articles.
+     */
+    @GetMapping("/{id}/diagnose")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ORG_ADMIN', 'ANALYST')")
+    @Transactional(readOnly = true)
+    public ResponseEntity<java.util.Map<String, Object>> diagnoseNarrative(@PathVariable Long id) {
+        var narrativeOpt = narrativeService.findById(id);
+        if (narrativeOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+
+        NarrativeDTO narrative = narrativeOpt.get();
+        java.util.Map<String, Object> diagnosis = new java.util.HashMap<>();
+
+        diagnosis.put("narrativeId", narrative.id());
+        diagnosis.put("name", narrative.name());
+        diagnosis.put("status", narrative.status());
+        diagnosis.put("keywords", narrative.keywords());
+        diagnosis.put("keywordsCount", narrative.keywords() != null ? narrative.keywords().size() : 0);
+        diagnosis.put("articleCountStored", narrative.articleCount());
+
+        // Check articles in the last 30 days
+        Instant since = Instant.now().minus(30, ChronoUnit.DAYS);
+        long totalArticlesLast30Days = articleRepository.countByPublishedAtAfter(since);
+        diagnosis.put("totalArticlesLast30Days", totalArticlesLast30Days);
+
+        // If we have keywords, try to find matching articles
+        if (narrative.keywords() != null && !narrative.keywords().isEmpty()) {
+            String[] keywordArray = narrative.keywords().toArray(new String[0]);
+            List<Article> matchingArticles = articleRepository.findByKeywordsSince(
+                    keywordArray, since, Pageable.ofSize(10));
+            diagnosis.put("matchingArticlesFound", matchingArticles.size());
+
+            // Show first few matching titles for debugging
+            List<String> sampleTitles = matchingArticles.stream()
+                    .limit(5)
+                    .map(a -> truncate(a.getTitle(), 100))
+                    .toList();
+            diagnosis.put("sampleMatchingTitles", sampleTitles);
+        } else {
+            diagnosis.put("issue", "NO_KEYWORDS - Narrative has no keywords defined");
+        }
+
+        return ResponseEntity.ok(diagnosis);
+    }
 }
