@@ -164,8 +164,23 @@ public class NarrativeController {
             return ResponseEntity.ok(Page.empty(pageable));
         }
 
+        // Expand multi-word keywords into individual words for better matching
+        // "Syunik concessions" becomes ["Syunik concessions", "Syunik", "concessions"]
+        List<String> expandedKeywords = new java.util.ArrayList<>();
+        for (String keyword : keywords) {
+            expandedKeywords.add(keyword); // Keep original phrase
+            if (keyword.contains(" ")) {
+                // Split into individual words (min 3 chars to avoid noise)
+                for (String word : keyword.split("\\s+")) {
+                    if (word.length() >= 3 && !expandedKeywords.contains(word)) {
+                        expandedKeywords.add(word);
+                    }
+                }
+            }
+        }
+
         Instant since = Instant.now().minus(30, ChronoUnit.DAYS);
-        String[] keywordArray = keywords.toArray(new String[0]);
+        String[] keywordArray = expandedKeywords.toArray(new String[0]);
 
         List<Article> articles = articleRepository.findByKeywordsSince(
                 keywordArray, since, pageable);
@@ -229,13 +244,13 @@ public class NarrativeController {
         }
 
         NarrativeDTO narrative = narrativeOpt.get();
-        java.util.Map<String, Object> diagnosis = new java.util.HashMap<>();
+        java.util.Map<String, Object> diagnosis = new java.util.LinkedHashMap<>();
 
         diagnosis.put("narrativeId", narrative.id());
         diagnosis.put("name", narrative.name());
         diagnosis.put("status", narrative.status());
-        diagnosis.put("keywords", narrative.keywords());
-        diagnosis.put("keywordsCount", narrative.keywords() != null ? narrative.keywords().size() : 0);
+        diagnosis.put("originalKeywords", narrative.keywords());
+        diagnosis.put("originalKeywordsCount", narrative.keywords() != null ? narrative.keywords().size() : 0);
         diagnosis.put("articleCountStored", narrative.articleCount());
 
         // Check articles in the last 30 days
@@ -245,17 +260,47 @@ public class NarrativeController {
 
         // If we have keywords, try to find matching articles
         if (narrative.keywords() != null && !narrative.keywords().isEmpty()) {
-            String[] keywordArray = narrative.keywords().toArray(new String[0]);
+            // Expand multi-word keywords
+            List<String> expandedKeywords = new java.util.ArrayList<>();
+            for (String keyword : narrative.keywords()) {
+                expandedKeywords.add(keyword);
+                if (keyword.contains(" ")) {
+                    for (String word : keyword.split("\\s+")) {
+                        if (word.length() >= 3 && !expandedKeywords.contains(word)) {
+                            expandedKeywords.add(word);
+                        }
+                    }
+                }
+            }
+            diagnosis.put("expandedKeywords", expandedKeywords);
+            diagnosis.put("expandedKeywordsCount", expandedKeywords.size());
+
+            String[] keywordArray = expandedKeywords.toArray(new String[0]);
             List<Article> matchingArticles = articleRepository.findByKeywordsSince(
                     keywordArray, since, Pageable.ofSize(10));
             diagnosis.put("matchingArticlesFound", matchingArticles.size());
 
-            // Show first few matching titles for debugging
-            List<String> sampleTitles = matchingArticles.stream()
+            // Show first few matching titles and their English titles for debugging
+            List<java.util.Map<String, String>> sampleArticles = matchingArticles.stream()
                     .limit(5)
-                    .map(a -> truncate(a.getTitle(), 100))
+                    .map(a -> {
+                        java.util.Map<String, String> info = new java.util.LinkedHashMap<>();
+                        info.put("title", truncate(a.getTitle(), 100));
+                        info.put("titleEn", truncate(a.getTitleEn(), 100));
+                        info.put("hasTranslation", a.getTitleEn() != null ? "yes" : "no");
+                        return info;
+                    })
                     .toList();
-            diagnosis.put("sampleMatchingTitles", sampleTitles);
+            diagnosis.put("sampleMatchingArticles", sampleArticles);
+
+            if (matchingArticles.isEmpty()) {
+                diagnosis.put("possibleIssues", Arrays.asList(
+                    "Keywords may be too specific (multi-word phrases need exact match)",
+                    "Articles may not be translated yet (title_en is NULL)",
+                    "Try adding Armenian keywords to match original content",
+                    "Try single-word keywords like 'Syunik', 'territorial', 'Pashinyan'"
+                ));
+            }
         } else {
             diagnosis.put("issue", "NO_KEYWORDS - Narrative has no keywords defined");
         }
