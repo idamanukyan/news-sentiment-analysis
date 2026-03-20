@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { teamApi, narrativesApi } from '../services/api'
-import type { TeamMember, SharedUser } from '../types'
+import type { SharedUser } from '../types'
 import { X, Share2, UserPlus, Trash2, Check, Edit2 } from 'lucide-react'
 
 interface ShareNarrativeModalProps {
