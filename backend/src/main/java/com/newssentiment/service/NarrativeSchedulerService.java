@@ -2,12 +2,13 @@ package com.newssentiment.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 /**
  * Scheduler for narrative tracking tasks.
- * Runs periodically to update counts and check for spikes.
+ * Runs periodically to update counts, check for spikes, and evaluate relevance.
  */
 @Service
 @RequiredArgsConstructor
@@ -16,6 +17,10 @@ public class NarrativeSchedulerService {
 
     private final NarrativeService narrativeService;
     private final ThreatAlertService threatAlertService;
+    private final NarrativeRelevanceService narrativeRelevanceService;
+
+    @Value("${app.anthropic.api-key:}")
+    private String anthropicApiKey;
 
     /**
      * Update narrative article counts every 15 minutes.
@@ -40,6 +45,34 @@ public class NarrativeSchedulerService {
             threatAlertService.checkForVolumeSpikes();
         } catch (Exception e) {
             log.error("Error checking for volume spikes", e);
+        }
+    }
+
+    /**
+     * Evaluate article-narrative relevance every 6 hours.
+     * Uses Claude Haiku to filter out incorrectly clustered articles.
+     */
+    @Scheduled(fixedDelayString = "${narrative.relevance.interval:21600000}") // 6 hours
+    public void evaluateNarrativeRelevance() {
+        // Skip if Anthropic API key is not configured
+        if (anthropicApiKey == null || anthropicApiKey.isBlank()) {
+            log.debug("Skipping relevance evaluation: ANTHROPIC_API_KEY not configured");
+            return;
+        }
+
+        log.info("Scheduled: Evaluating article-narrative relevance");
+        try {
+            long unscoredCount = narrativeRelevanceService.countUnscoredPairs();
+            if (unscoredCount == 0) {
+                log.info("No unscored article-narrative pairs to evaluate");
+                return;
+            }
+
+            log.info("Found {} unscored article-narrative pairs", unscoredCount);
+            int processed = narrativeRelevanceService.processAllUnscored();
+            log.info("Completed relevance evaluation: processed {} pairs", processed);
+        } catch (Exception e) {
+            log.error("Error evaluating narrative relevance", e);
         }
     }
 }

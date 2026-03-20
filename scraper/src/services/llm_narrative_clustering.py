@@ -747,6 +747,31 @@ Respond with ONLY this JSON object (no other text):
         """
         articles = cluster["articles"]
 
+        # Get organization_id from the articles' sources
+        # Use the most common organization among the sources
+        source_ids = [a.get("source_id") for a in articles if a.get("source_id")]
+        organization_id = None
+
+        if source_ids:
+            with get_db() as db:
+                result = db.execute(text("""
+                    SELECT organization_id, COUNT(*) as cnt
+                    FROM sources
+                    WHERE id = ANY(:source_ids)
+                    AND organization_id IS NOT NULL
+                    GROUP BY organization_id
+                    ORDER BY cnt DESC
+                    LIMIT 1
+                """), {"source_ids": list(set(source_ids))})
+                row = result.fetchone()
+                if row:
+                    organization_id = row.organization_id
+
+        if not organization_id:
+            logger.warning("no_organization_id_for_narrative", cluster_title=cluster.get("title", ""))
+            # Default to organization_id 2 (CivilNet) if no org found
+            organization_id = 2
+
         # Merge and deduplicate keywords
         all_keywords = []
         for article in articles:
@@ -821,13 +846,13 @@ Respond with ONLY this JSON object (no other text):
                     name, description, keywords, status, threat_level,
                     first_seen, last_seen, article_count, telegram_count,
                     avg_sentiment, source_breakdown, auto_generated,
-                    ai_summary, ai_summary_generated_at
+                    ai_summary, ai_summary_generated_at, organization_id
                 )
                 VALUES (
                     :name, :description, :keywords, 'PENDING_REVIEW', :threat_level,
                     :first_seen, :last_seen, :article_count, :telegram_count,
                     :avg_sentiment, :source_breakdown, true,
-                    :ai_summary, :ai_summary_generated_at
+                    :ai_summary, :ai_summary_generated_at, :organization_id
                 )
                 RETURNING id
             """), {
@@ -843,6 +868,7 @@ Respond with ONLY this JSON object (no other text):
                 "source_breakdown": json.dumps(dict(source_counts)),
                 "ai_summary": ai_summary_json,
                 "ai_summary_generated_at": ai_summary_generated_at,
+                "organization_id": organization_id,
             })
 
             narrative_id = result.fetchone()[0]
@@ -885,35 +911,47 @@ Respond with ONLY this JSON object (no other text):
     # =========================================================================
 
     def cleanup_old_narratives(self):
-        """Delete old auto-generated narratives and clear assignments."""
+        """
+        Delete old auto-generated narratives that are still pending review.
+        Preserves narratives that analysts have approved (status != PENDING_REVIEW).
+        """
         with get_db() as db:
-            # Clear article narrative assignments for auto-generated narratives
+            # Only clear article assignments for PENDING_REVIEW auto-generated narratives
+            # Keep assignments for approved narratives
             db.execute(text("""
                 UPDATE articles SET narrative_id = NULL
                 WHERE narrative_id IN (
-                    SELECT id FROM narratives WHERE auto_generated = true
+                    SELECT id FROM narratives
+                    WHERE auto_generated = true
+                    AND status = 'PENDING_REVIEW'
                 )
             """))
 
-            # Delete from junction table
+            # Delete from junction table only for pending narratives
             db.execute(text("""
                 DELETE FROM article_narratives
                 WHERE narrative_id IN (
-                    SELECT id FROM narratives WHERE auto_generated = true
+                    SELECT id FROM narratives
+                    WHERE auto_generated = true
+                    AND status = 'PENDING_REVIEW'
                 )
             """))
 
-            # Delete old auto-generated narratives (keep manually created ones)
+            # Delete only PENDING_REVIEW auto-generated narratives
+            # Keep approved ones (ACTIVE, MONITORING, RESOLVED, ARCHIVED)
             result = db.execute(text("""
                 DELETE FROM narratives
                 WHERE auto_generated = true
+                AND status = 'PENDING_REVIEW'
                 RETURNING id
             """))
 
             deleted_count = len(result.fetchall())
             db.commit()
 
-            logger.info("cleanup_complete", deleted_narratives=deleted_count)
+            logger.info("cleanup_complete",
+                       deleted_pending_narratives=deleted_count,
+                       note="Approved narratives preserved")
             return deleted_count
 
     def run_full_pipeline(self, days: int = 7,

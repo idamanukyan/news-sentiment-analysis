@@ -203,4 +203,31 @@ public interface ArticleRepository extends JpaRepository<Article, Long>, JpaSpec
            "ORDER BY date",
            nativeQuery = true)
     List<Object[]> countByDaySinceAndOrganizationId(@Param("orgId") Long orgId, @Param("since") Instant since);
+
+    /**
+     * Find articles for a narrative using the junction table with relevance filtering.
+     * Includes articles where relevance_score >= threshold OR relevance_score IS NULL (unscored).
+     */
+    @Query(value = "SELECT a.* FROM articles a " +
+           "INNER JOIN article_narratives an ON a.id = an.article_id " +
+           "WHERE an.narrative_id = :narrativeId " +
+           "AND (an.relevance_score IS NULL OR an.relevance_score >= :threshold) " +
+           "ORDER BY a.published_at DESC",
+           nativeQuery = true)
+    List<Article> findByNarrativeIdWithRelevanceThreshold(
+            @Param("narrativeId") Long narrativeId,
+            @Param("threshold") Float threshold,
+            Pageable pageable);
+
+    /**
+     * Count articles for a narrative that pass relevance threshold.
+     */
+    @Query(value = "SELECT COUNT(*) FROM articles a " +
+           "INNER JOIN article_narratives an ON a.id = an.article_id " +
+           "WHERE an.narrative_id = :narrativeId " +
+           "AND (an.relevance_score IS NULL OR an.relevance_score >= :threshold)",
+           nativeQuery = true)
+    long countByNarrativeIdWithRelevanceThreshold(
+            @Param("narrativeId") Long narrativeId,
+            @Param("threshold") Float threshold);
 }

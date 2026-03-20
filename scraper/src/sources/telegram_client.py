@@ -11,11 +11,14 @@ from typing import List, Optional, Dict, Any
 import structlog
 from telethon import TelegramClient
 from telethon.tl.types import Channel, Message
+from telethon.tl.functions.messages import CheckChatInviteRequest
 from telethon.errors import (
     ChannelPrivateError,
     UsernameNotOccupiedError,
     UsernameInvalidError,
     FloodWaitError,
+    InviteHashExpiredError,
+    InviteHashInvalidError,
 )
 
 from ..models import Article, Source
@@ -164,6 +167,48 @@ class TelegramMonitor:
             await self.client.disconnect()
             logger.info("telegram_disconnected")
 
+    async def _find_channel_by_invite_hash(self, invite_hash: str) -> Optional[Channel]:
+        """
+        Find a channel from joined dialogs by checking if we're a member.
+        This is used for private channels where we only have the invite link.
+
+        Args:
+            invite_hash: The invite hash (part after + in invite link)
+
+        Returns:
+            Channel entity if found, None otherwise
+        """
+        try:
+            # Get all dialogs (channels, groups, chats we're part of)
+            dialogs = await self.client.get_dialogs()
+
+            for dialog in dialogs:
+                entity = dialog.entity
+                if isinstance(entity, Channel):
+                    # Log for debugging
+                    logger.debug("telegram_checking_dialog",
+                               title=entity.title,
+                               username=getattr(entity, 'username', None),
+                               id=entity.id)
+
+                    # We can't easily match by invite hash, but we can list all channels
+                    # The user might need to provide the channel ID or actual username
+
+            # For now, log all available channels so user can identify the right one
+            channels = [d for d in dialogs if isinstance(d.entity, Channel)]
+            logger.info("telegram_available_channels",
+                       count=len(channels),
+                       channels=[{
+                           "title": c.entity.title,
+                           "username": getattr(c.entity, 'username', None),
+                           "id": c.entity.id
+                       } for c in channels[:20]])  # Limit to 20 for logging
+
+            return None
+        except Exception as e:
+            logger.error("telegram_find_channel_error", error=str(e))
+            return None
+
     async def fetch_channel_messages(
         self,
         channel_username: str,
@@ -175,7 +220,7 @@ class TelegramMonitor:
         Fetch recent messages from a Telegram channel.
 
         Args:
-            channel_username: Channel username (without @)
+            channel_username: Channel username (without @) or invite link hash (with +)
             source_id: Optional source ID from database
             limit: Maximum number of messages to fetch
             min_date: Only fetch messages after this date
@@ -194,7 +239,57 @@ class TelegramMonitor:
         clean_username = channel_username.replace("@", "").strip()
 
         try:
-            entity = await self.client.get_entity(clean_username)
+            # Handle private channel invite links (start with +)
+            if clean_username.startswith('+'):
+                invite_hash = clean_username[1:]  # Remove the + prefix
+                logger.info("telegram_resolving_invite_link", invite_hash=invite_hash)
+
+                entity = None
+
+                # Method 1: Try CheckChatInviteRequest to get channel info
+                try:
+                    result = await self.client(CheckChatInviteRequest(hash=invite_hash))
+                    # If we've already joined, result.chat contains the channel
+                    if hasattr(result, 'chat') and result.chat:
+                        entity = result.chat
+                        logger.info("telegram_invite_resolved_via_check",
+                                   title=getattr(entity, 'title', 'Unknown'),
+                                   id=entity.id)
+                except (InviteHashExpiredError, InviteHashInvalidError) as e:
+                    logger.warning("telegram_invite_hash_error", error=str(e))
+                except Exception as e:
+                    logger.debug("telegram_check_invite_failed", error=str(e))
+
+                # Method 2: Search in dialogs for channels we've joined
+                if not entity:
+                    logger.info("telegram_searching_dialogs_for_channel")
+                    entity = await self._find_channel_by_invite_hash(invite_hash)
+
+                # Method 3: Try get_entity with full URL
+                if not entity:
+                    try:
+                        invite_link = f"https://t.me/+{invite_hash}"
+                        entity = await self.client.get_entity(invite_link)
+                        logger.info("telegram_resolved_via_url", title=getattr(entity, 'title', 'Unknown'))
+                    except Exception as e:
+                        logger.debug("telegram_url_resolve_failed", error=str(e))
+
+                if not entity:
+                    logger.error("telegram_could_not_resolve_invite",
+                               invite_hash=invite_hash,
+                               hint="Make sure you've joined this channel with the Telegram session account")
+                    self.failed_channels.append({
+                        "username": clean_username,
+                        "reason": "invite_link_not_resolved"
+                    })
+                    return []
+            # Handle numeric channel IDs (e.g., -1001234567890 or 1234567890)
+            elif clean_username.lstrip('-').isdigit():
+                channel_id = int(clean_username)
+                logger.info("telegram_using_numeric_id", channel_id=channel_id)
+                entity = await self.client.get_entity(channel_id)
+            else:
+                entity = await self.client.get_entity(clean_username)
 
             if not isinstance(entity, Channel):
                 logger.warning("telegram_not_a_channel", username=clean_username)
