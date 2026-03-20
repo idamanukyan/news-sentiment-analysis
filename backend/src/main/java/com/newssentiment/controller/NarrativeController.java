@@ -4,6 +4,7 @@ import com.newssentiment.dto.ArticleDTO;
 import com.newssentiment.dto.NarrativeApproveRequest;
 import com.newssentiment.dto.NarrativeCreateRequest;
 import com.newssentiment.dto.NarrativeDTO;
+import com.newssentiment.dto.NarrativeUpdateRequest;
 import com.newssentiment.model.Article;
 import com.newssentiment.model.Narrative.NarrativeStatus;
 import com.newssentiment.model.Narrative.ThreatLevel;
@@ -73,6 +74,17 @@ public class NarrativeController {
             @Valid @RequestBody NarrativeCreateRequest request) {
         NarrativeDTO created = narrativeService.create(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ORG_ADMIN', 'ANALYST')")
+    public ResponseEntity<NarrativeDTO> updateNarrative(
+            @PathVariable Long id,
+            @RequestBody NarrativeUpdateRequest request) {
+        return narrativeService.update(id, request.name(), request.description(),
+                        request.keywords(), request.threatLevel())
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.notFound().build());
     }
 
     @PatchMapping("/{id}/status")

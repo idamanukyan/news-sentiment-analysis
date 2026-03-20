@@ -138,6 +138,32 @@ public class NarrativeService {
     }
 
     /**
+     * Update a narrative's properties (name, description, keywords, threat level).
+     * Only updates fields that are provided (non-null).
+     */
+    @Transactional
+    public Optional<NarrativeDTO> update(Long id, String name, String description,
+                                          java.util.List<String> keywords, String threatLevel) {
+        return narrativeRepository.findByIdAndOrganizationId(id, getOrgId())
+                .map(narrative -> {
+                    if (name != null && !name.trim().isEmpty()) {
+                        narrative.setName(name.trim());
+                    }
+                    if (description != null) {
+                        narrative.setDescription(description.trim());
+                    }
+                    if (keywords != null && !keywords.isEmpty()) {
+                        narrative.setKeywords(keywords.toArray(new String[0]));
+                    }
+                    if (threatLevel != null && !threatLevel.trim().isEmpty()) {
+                        narrative.setThreatLevel(ThreatLevel.valueOf(threatLevel.toUpperCase()));
+                    }
+                    log.info("Narrative '{}' (id={}) updated", narrative.getName(), id);
+                    return toDTO(narrativeRepository.save(narrative));
+                });
+    }
+
+    /**
      * Approve a pending narrative, changing status from PENDING_REVIEW to ACTIVE.
      * Optionally updates the title if provided.
      * @param id Narrative ID
@@ -198,7 +224,8 @@ public class NarrativeService {
     @Transactional
     public void updateNarrativeCounts() {
         log.info("Updating narrative article counts...");
-        Instant since = Instant.now().minus(7, ChronoUnit.DAYS);
+        // Use 30-day window to match the article view endpoint
+        Instant since = Instant.now().minus(30, ChronoUnit.DAYS);
 
         // Update both ACTIVE and PENDING_REVIEW narratives
         List<Narrative> activeNarratives = narrativeRepository.findByStatus(NarrativeStatus.ACTIVE);
@@ -213,8 +240,22 @@ public class NarrativeService {
                 continue;
             }
 
-            // Count articles matching keywords in the last 7 days
-            long count = articleRepository.countByKeywordsSince(keywords, since);
+            // Expand multi-word keywords to match article view logic
+            // "Syunik concessions" becomes ["Syunik concessions", "Syunik", "concessions"]
+            List<String> expandedKeywords = new java.util.ArrayList<>();
+            for (String keyword : keywords) {
+                expandedKeywords.add(keyword);
+                if (keyword.contains(" ")) {
+                    for (String word : keyword.split("\\s+")) {
+                        if (word.length() >= 3 && !expandedKeywords.contains(word)) {
+                            expandedKeywords.add(word);
+                        }
+                    }
+                }
+            }
+
+            // Count articles matching keywords in the last 30 days
+            long count = articleRepository.countByKeywordsSince(expandedKeywords.toArray(new String[0]), since);
 
             int previousCount = narrative.getArticleCount() != null ? narrative.getArticleCount() : 0;
             narrative.setArticleCount((int) count);
