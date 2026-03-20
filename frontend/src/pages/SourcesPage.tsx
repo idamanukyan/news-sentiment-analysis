@@ -235,10 +235,22 @@ function CredibilityBadge({ score, factors }: {
   )
 }
 
-function StatusIndicator({ active, lastFetched, lastSuccess }: { active: boolean; lastFetched?: string; lastSuccess?: string }) {
+function StatusIndicator({
+  active,
+  lastFetched,
+  lastSuccess,
+  sourceType,
+  config
+}: {
+  active: boolean
+  lastFetched?: string
+  lastSuccess?: string
+  sourceType?: string
+  config?: Record<string, unknown>
+}) {
   if (!active) {
     return (
-      <span className="flex items-center gap-1.5 text-gray-600 text-sm">
+      <span className="flex items-center gap-1.5 text-gray-600 text-xs">
         <span className="w-2 h-2 bg-gray-400 rounded-full" />
         Inactive
       </span>
@@ -247,18 +259,33 @@ function StatusIndicator({ active, lastFetched, lastSuccess }: { active: boolean
 
   const hasError = lastFetched && lastSuccess && new Date(lastFetched) > new Date(lastSuccess)
   const isRecent = lastFetched && (Date.now() - new Date(lastFetched).getTime()) < 3600000
+  const isSuccessRecent = lastSuccess && (Date.now() - new Date(lastSuccess).getTime()) < 3600000
 
-  if (hasError) {
+  // Check if this is a Facebook source using website fallback
+  const isFacebookWithFallback = sourceType === 'FACEBOOK' && config?.website_url
+  const isUsingFallback = isFacebookWithFallback && isSuccessRecent
+
+  if (hasError && !isUsingFallback) {
     return (
-      <span className="flex items-center gap-1.5 text-red-600 text-sm">
+      <span className="flex items-center gap-1.5 text-red-600 text-xs">
         <span className="w-2 h-2 bg-red-500 rounded-full" />
         Error
       </span>
     )
   }
 
+  // Facebook source working via fallback
+  if (isUsingFallback) {
+    return (
+      <span className="flex items-center gap-1.5 text-blue-600 text-xs" title="Working via website fallback">
+        <span className="w-2 h-2 bg-blue-500 animate-pulse rounded-full" />
+        Active*
+      </span>
+    )
+  }
+
   return (
-    <span className={`flex items-center gap-1.5 text-sm ${isRecent ? 'text-green-600' : 'text-amber-600'}`}>
+    <span className={`flex items-center gap-1.5 text-xs ${isRecent ? 'text-green-600' : 'text-amber-600'}`}>
       <span className={`w-2 h-2 ${isRecent ? 'bg-green-500 animate-pulse' : 'bg-amber-500'} rounded-full`} />
       {isRecent ? 'Active' : 'Delayed'}
     </span>
@@ -674,6 +701,8 @@ export default function SourcesPage() {
                         active={source.active}
                         lastFetched={source.lastFetched}
                         lastSuccess={source.lastSuccess}
+                        sourceType={source.type}
+                        config={source.config}
                       />
                     </td>
                     <td className="text-xs text-gray-600">

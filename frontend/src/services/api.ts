@@ -7,6 +7,11 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  // Serialize arrays without brackets for Spring Boot compatibility
+  // e.g., sourceIds=1&sourceIds=2 instead of sourceIds[]=1&sourceIds[]=2
+  paramsSerializer: {
+    indexes: null, // No indexes: sourceIds=1&sourceIds=2 (not sourceIds[0]=1)
+  },
 })
 
 // Add auth token to requests
