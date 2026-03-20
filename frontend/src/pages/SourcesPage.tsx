@@ -505,7 +505,7 @@ export default function SourcesPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Total Sources</p>
-              <p className="text-2xl font-bold text-gray-900">{displayStats.total}</p>
+              <p className="text-xl font-bold text-gray-900">{displayStats.total}</p>
             </div>
             <div className="p-2.5 bg-gray-100 rounded-lg">
               <Database size={20} className="text-gray-600" />
@@ -516,7 +516,7 @@ export default function SourcesPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">RSS Feeds</p>
-              <p className="text-2xl font-bold text-green-600">{displayStats.byType.rss}</p>
+              <p className="text-xl font-bold text-green-600">{displayStats.byType.rss}</p>
             </div>
             <div className="p-2.5 bg-green-100 rounded-lg">
               <Newspaper size={20} className="text-green-600" />
@@ -527,7 +527,7 @@ export default function SourcesPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Telegram</p>
-              <p className="text-2xl font-bold text-purple-600">{displayStats.byType.telegram}</p>
+              <p className="text-xl font-bold text-purple-600">{displayStats.byType.telegram}</p>
             </div>
             <div className="p-2.5 bg-purple-100 rounded-lg">
               <Radio size={20} className="text-purple-600" />
@@ -538,7 +538,7 @@ export default function SourcesPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Facebook</p>
-              <p className="text-2xl font-bold text-blue-600">{displayStats.byType.facebook}</p>
+              <p className="text-xl font-bold text-blue-600">{displayStats.byType.facebook}</p>
             </div>
             <div className="p-2.5 bg-blue-100 rounded-lg">
               <Facebook size={20} className="text-blue-600" />
@@ -549,7 +549,7 @@ export default function SourcesPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Web Scrape</p>
-              <p className="text-2xl font-bold text-sky-600">{displayStats.byType.webScrape}</p>
+              <p className="text-xl font-bold text-sky-600">{displayStats.byType.webScrape}</p>
             </div>
             <div className="p-2.5 bg-sky-100 rounded-lg">
               <Globe size={20} className="text-sky-600" />
@@ -560,7 +560,7 @@ export default function SourcesPage() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-600">Active</p>
-              <p className="text-2xl font-bold text-green-600">{displayStats.active}</p>
+              <p className="text-xl font-bold text-green-600">{displayStats.active}</p>
             </div>
             <div className="p-2.5 bg-green-100 rounded-lg">
               <CheckCircle size={20} className="text-green-600" />
@@ -653,12 +653,12 @@ export default function SourcesPage() {
                   <tr key={source.id}>
                     <td>
                       <div>
-                        <p className="font-medium text-gray-900">{source.name}</p>
+                        <p className="text-sm font-medium text-gray-900">{source.name}</p>
                         <a
                           href={source.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-xs text-gray-600 hover:text-primary-600 truncate max-w-xs flex items-center gap-1 group"
+                          className="text-xs text-gray-500 hover:text-primary-600 truncate max-w-xs flex items-center gap-1 group"
                         >
                           {source.url.length > 40 ? source.url.substring(0, 40) + '...' : source.url}
                           <ExternalLink size={10} className="opacity-0 group-hover:opacity-100 transition-opacity" />
@@ -676,13 +676,13 @@ export default function SourcesPage() {
                         lastSuccess={source.lastSuccess}
                       />
                     </td>
-                    <td className="text-sm text-gray-600">
+                    <td className="text-xs text-gray-600">
                       <span className="flex items-center gap-1">
-                        <Clock size={12} className="text-gray-400" />
+                        <Clock size={10} className="text-gray-400" />
                         {formatDate(source.lastFetched)}
                       </span>
                     </td>
-                    <td className="text-sm font-medium text-gray-900">
+                    <td className="text-xs font-medium text-gray-900">
                       {source.articleCount?.toLocaleString() || '0'}
                     </td>
                     <td>
