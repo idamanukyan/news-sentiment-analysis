@@ -98,4 +98,40 @@ public interface NarrativeRepository extends JpaRepository<Narrative, Long> {
            "LOWER(n.description) LIKE LOWER(CONCAT('%', :query, '%')) " +
            "ORDER BY n.articleCount DESC")
     List<Narrative> searchByNameOrDescriptionList(@Param("query") String query, Pageable pageable);
+
+    // User-scoped queries for narrative sharing feature
+    @Query("SELECT DISTINCT n FROM Narrative n " +
+           "LEFT JOIN NarrativeShare ns ON ns.narrative = n " +
+           "WHERE n.organizationId = :orgId " +
+           "AND (n.createdBy.id = :userId OR ns.sharedWithUser.id = :userId) " +
+           "AND n.status != 'PENDING_REVIEW' " +
+           "ORDER BY n.createdAt DESC")
+    Page<Narrative> findAccessibleByUser(@Param("orgId") Long orgId, @Param("userId") Long userId, Pageable pageable);
+
+    @Query("SELECT DISTINCT n FROM Narrative n " +
+           "LEFT JOIN NarrativeShare ns ON ns.narrative = n " +
+           "WHERE n.organizationId = :orgId " +
+           "AND (n.createdBy.id = :userId OR ns.sharedWithUser.id = :userId) " +
+           "AND n.status IN :statuses " +
+           "ORDER BY n.threatLevel DESC, n.articleCount DESC")
+    Page<Narrative> findAccessibleByUserAndStatusIn(@Param("orgId") Long orgId, @Param("userId") Long userId,
+                                                     @Param("statuses") List<NarrativeStatus> statuses, Pageable pageable);
+
+    @Query("SELECT n FROM Narrative n WHERE n.organizationId = :orgId AND n.createdBy.id = :userId AND n.status != 'PENDING_REVIEW' ORDER BY n.createdAt DESC")
+    Page<Narrative> findByOrganizationIdAndCreatedByIdExcludingPendingReview(@Param("orgId") Long orgId, @Param("userId") Long userId, Pageable pageable);
+
+    @Query("SELECT n FROM Narrative n " +
+           "JOIN NarrativeShare ns ON ns.narrative = n " +
+           "WHERE n.organizationId = :orgId " +
+           "AND ns.sharedWithUser.id = :userId " +
+           "AND n.status != 'PENDING_REVIEW' " +
+           "ORDER BY ns.createdAt DESC")
+    Page<Narrative> findSharedWithUser(@Param("orgId") Long orgId, @Param("userId") Long userId, Pageable pageable);
+
+    @Query("SELECT COUNT(DISTINCT n) FROM Narrative n " +
+           "LEFT JOIN NarrativeShare ns ON ns.narrative = n " +
+           "WHERE n.organizationId = :orgId " +
+           "AND (n.createdBy.id = :userId OR ns.sharedWithUser.id = :userId) " +
+           "AND n.status = 'ACTIVE'")
+    long countAccessibleActiveByUser(@Param("orgId") Long orgId, @Param("userId") Long userId);
 }

@@ -4,6 +4,8 @@ import toast from 'react-hot-toast'
 import { narrativesApi, coordinationEventsApi } from '../services/api'
 import { useAuthStore } from '../contexts/authStore'
 import { formatDistanceToNow } from 'date-fns'
+import ShareNarrativeModal from '../components/ShareNarrativeModal'
+import type { SharedUser } from '../types'
 import {
   Plus,
   X,
@@ -26,6 +28,8 @@ import {
   Trash2,
   Bot,
   Check,
+  Share2,
+  User,
 } from 'lucide-react'
 
 interface AiSummary {
@@ -53,6 +57,13 @@ interface Narrative {
   lastSeen: string
   createdAt: string
   aiSummary: AiSummary | null
+  // Sharing fields
+  createdById?: number
+  createdByName?: string
+  isOwner: boolean
+  isShared: boolean
+  canEdit: boolean
+  sharedWith?: SharedUser[]
 }
 
 interface FactCheck {
@@ -227,15 +238,18 @@ export default function NarrativesPage() {
 
   const [selectedNarrative, setSelectedNarrative] = useState<Narrative | null>(null)
   const [filter, setFilter] = useState<'all' | 'active' | 'high'>('all')
+  const [ownershipFilter, setOwnershipFilter] = useState<'all' | 'mine' | 'shared'>('all')
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [narrativeToShare, setNarrativeToShare] = useState<Narrative | null>(null)
   const [viewMode, setViewMode] = useState<'active' | 'pending'>('active')
   const [editedTitles, setEditedTitles] = useState<Record<number, string>>({})
 
   // Query for active narratives (default view)
   const { data: narrativesData, isLoading } = useQuery({
-    queryKey: ['narratives'],
+    queryKey: ['narratives', ownershipFilter],
     queryFn: async () => {
-      const res = await narrativesApi.getAll()
+      const res = await narrativesApi.getAll({ filter: ownershipFilter })
       return res.data
     },
     enabled: viewMode === 'active',
@@ -449,6 +463,32 @@ export default function NarrativesPage() {
         </button>
       </div>
 
+      {/* Ownership Filter Tabs */}
+      {viewMode === 'active' && (
+        <div className="flex gap-2 mb-4">
+          <button
+            onClick={() => setOwnershipFilter('all')}
+            className={`btn btn-sm ${ownershipFilter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
+          >
+            All Narratives
+          </button>
+          <button
+            onClick={() => setOwnershipFilter('mine')}
+            className={`btn btn-sm ${ownershipFilter === 'mine' ? 'btn-primary' : 'btn-secondary'}`}
+          >
+            <User size={14} />
+            My Narratives
+          </button>
+          <button
+            onClick={() => setOwnershipFilter('shared')}
+            className={`btn btn-sm ${ownershipFilter === 'shared' ? 'btn-primary' : 'btn-secondary'}`}
+          >
+            <Share2 size={14} />
+            Shared with Me
+          </button>
+        </div>
+      )}
+
       {/* Filters and Actions */}
       <div className="flex items-center justify-between">
         {viewMode === 'active' ? (
@@ -541,10 +581,28 @@ export default function NarrativesPage() {
                   <ThreatBadge level={narrative.threatLevel} />
                 </div>
 
-                {/* Status - hide for pending since we have the badge */}
+                {/* Status and ownership badges - hide for pending since we have the badge */}
                 {!isPending && (
-                  <div className="mb-3">
+                  <div className="flex items-center gap-2 mb-3">
                     <StatusBadge status={narrative.status} />
+                    {narrative.isOwner && (
+                      <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded flex items-center gap-1">
+                        <User size={10} />
+                        Owner
+                      </span>
+                    )}
+                    {narrative.isShared && !narrative.isOwner && (
+                      <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded flex items-center gap-1">
+                        <Share2 size={10} />
+                        Shared with you
+                      </span>
+                    )}
+                    {narrative.isOwner && narrative.sharedWith && narrative.sharedWith.length > 0 && (
+                      <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded flex items-center gap-1">
+                        <Users size={10} />
+                        Shared ({narrative.sharedWith.length})
+                      </span>
+                    )}
                   </div>
                 )}
 
@@ -612,10 +670,27 @@ export default function NarrativesPage() {
                     )}
                   </div>
                 </div>
-                <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                  <Clock size={10} />
-                  First detected {formatDate(narrative.firstSeen)}
-                </p>
+                <div className="flex items-center justify-between mt-2">
+                  <p className="text-xs text-gray-500 flex items-center gap-1">
+                    <Clock size={10} />
+                    First detected {formatDate(narrative.firstSeen)}
+                  </p>
+                  {/* Share button for owners */}
+                  {!isPending && narrative.isOwner && canEdit && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setNarrativeToShare(narrative)
+                        setShowShareModal(true)
+                      }}
+                      className="btn btn-sm btn-secondary flex items-center gap-1 text-xs py-1 px-2"
+                      title="Share narrative"
+                    >
+                      <Share2 size={12} />
+                      Share
+                    </button>
+                  )}
+                </div>
 
                 {/* Approve/Delete Actions for Pending */}
                 {isPending && canEdit && (
@@ -709,6 +784,21 @@ export default function NarrativesPage() {
         <CreateNarrativeModal
           onClose={() => setShowCreateModal(false)}
           onSuccess={() => setShowCreateModal(false)}
+        />
+      )}
+
+      {showShareModal && narrativeToShare && (
+        <ShareNarrativeModal
+          narrativeId={narrativeToShare.id}
+          narrativeName={narrativeToShare.name}
+          sharedWith={narrativeToShare.sharedWith}
+          onClose={() => {
+            setShowShareModal(false)
+            setNarrativeToShare(null)
+          }}
+          onShareUpdate={() => {
+            queryClient.invalidateQueries({ queryKey: ['narratives'] })
+          }}
         />
       )}
     </div>

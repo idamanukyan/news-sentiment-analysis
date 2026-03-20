@@ -21,11 +21,46 @@ api.interceptors.request.use((config) => {
 // Handle responses and errors
 api.interceptors.response.use(
   (response) => response,
-  (error: AxiosError<{ message?: string; error?: string }>) => {
-    // Handle 401 - unauthorized
+  (error: AxiosError<{ message?: string; error?: string; code?: string }>) => {
+    const errorCode = error.response?.data?.code
+    const isSessionExpired = errorCode === 'SESSION_EXPIRED'
+
+    // Handle 401 - unauthorized (including session expiry)
     if (error.response?.status === 401) {
       useAuthStore.getState().logout()
+      if (isSessionExpired) {
+        toast.error('Your session has expired. Please log in again.')
+      }
       window.location.href = '/login'
+      return Promise.reject(error)
+    }
+
+    // Handle 403 - check if it might be a token issue
+    // Sometimes 403 can occur if the token is malformed or org context is missing
+    if (error.response?.status === 403) {
+      const token = useAuthStore.getState().token
+      if (token) {
+        // Check if token might be expired by decoding it (without verification)
+        try {
+          const payload = JSON.parse(atob(token.split('.')[1]))
+          const expiry = payload.exp * 1000 // Convert to milliseconds
+          if (Date.now() >= expiry) {
+            // Token is expired, treat as session expiry
+            useAuthStore.getState().logout()
+            toast.error('Your session has expired. Please log in again.')
+            window.location.href = '/login'
+            return Promise.reject(error)
+          }
+        } catch {
+          // If we can't decode the token, it might be invalid
+          useAuthStore.getState().logout()
+          toast.error('Session invalid. Please log in again.')
+          window.location.href = '/login'
+          return Promise.reject(error)
+        }
+      }
+      // If we get here, it's a genuine permission issue
+      toast.error('Access denied. You do not have permission.')
       return Promise.reject(error)
     }
 
@@ -37,9 +72,7 @@ api.interceptors.response.use(
       'An unexpected error occurred'
 
     // Show toast for different error types
-    if (error.response?.status === 403) {
-      toast.error('Access denied. You do not have permission.')
-    } else if (error.response?.status === 404) {
+    if (error.response?.status === 404) {
       toast.error('Resource not found.')
     } else if (error.response?.status === 422 || error.response?.status === 400) {
       toast.error(message)
@@ -156,9 +189,12 @@ export const topicsApi = {
   delete: (id: number) => api.delete(`/topics/${id}`),
 }
 
+// Import SharedUser type
+import type { SharedUser } from '../types'
+
 // Narratives endpoints
 export const narrativesApi = {
-  getAll: (params?: { status?: string; threatLevel?: string }) =>
+  getAll: (params?: { status?: string; threatLevel?: string; filter?: 'all' | 'mine' | 'shared' }) =>
     api.get('/narratives', { params }),
   getById: (id: number) => api.get(`/narratives/${id}`),
   getArticles: (id: number, params?: { page?: number; size?: number }) =>
@@ -194,6 +230,13 @@ export const narrativesApi = {
     notes?: string
   }) => api.post(`/narratives/${narrativeId}/fact-checks`, data),
   deleteFactCheck: (id: number) => api.delete(`/fact-checks/${id}`),
+  // Sharing
+  share: (id: number, data: { userIds: number[]; canEdit: boolean }) =>
+    api.post(`/narratives/${id}/share`, data),
+  unshare: (id: number, userId: number) =>
+    api.delete(`/narratives/${id}/share/${userId}`),
+  getShares: (id: number) =>
+    api.get<SharedUser[]>(`/narratives/${id}/shares`),
 }
 
 // Bulk operation response type

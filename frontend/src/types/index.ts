@@ -168,3 +168,44 @@ export interface Bookmark {
   articleId: number
   createdAt: string
 }
+
+// Narrative Sharing Types
+export interface SharedUser {
+  userId: number
+  userName: string
+  userEmail: string
+  canEdit: boolean
+  sharedAt: string
+}
+
+export interface Narrative {
+  id: number
+  name: string
+  description: string
+  keywords: string[]
+  status: string
+  threatLevel: string
+  articleCount: number
+  alertCount: number
+  hasCoordinationEvents: boolean
+  coordinationEventCount: number
+  factCheckCount: number
+  hasFactChecks: boolean
+  firstSeen: string
+  lastSeen: string
+  createdAt: string
+  aiSummary: {
+    summary: string
+    keyPoints: string[]
+    potentialImpact: string
+    suggestedActions: string[]
+    generatedAt: string
+  } | null
+  // Sharing fields
+  createdById?: number
+  createdByName?: string
+  isOwner: boolean
+  isShared: boolean
+  canEdit: boolean
+  sharedWith?: SharedUser[]
+}

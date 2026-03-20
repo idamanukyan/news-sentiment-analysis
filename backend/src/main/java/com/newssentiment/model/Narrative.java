@@ -68,8 +68,15 @@ public class Narrative {
     @Column(name = "ai_summary_generated_at")
     private Instant aiSummaryGeneratedAt;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "created_by")
+    private User createdBy;
+
     @OneToMany(mappedBy = "narrative", fetch = FetchType.LAZY)
     private List<ThreatAlert> alerts;
+
+    @OneToMany(mappedBy = "narrative", fetch = FetchType.LAZY)
+    private List<NarrativeShare> shares;
 
     public enum NarrativeStatus {
         ACTIVE, MONITORING, RESOLVED, ARCHIVED, PENDING_REVIEW

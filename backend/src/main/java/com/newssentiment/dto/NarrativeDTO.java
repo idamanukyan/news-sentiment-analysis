@@ -19,5 +19,11 @@ public record NarrativeDTO(
         Integer factCheckCount,
         Boolean hasFactChecks,
         Instant createdAt,
-        AiSummaryDTO aiSummary
+        AiSummaryDTO aiSummary,
+        Long createdById,
+        String createdByName,
+        Boolean isOwner,
+        Boolean isShared,
+        Boolean canEdit,
+        List<SharedUserDTO> sharedWith
 ) {}

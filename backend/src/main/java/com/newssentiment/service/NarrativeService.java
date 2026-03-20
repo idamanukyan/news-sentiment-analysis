@@ -5,15 +5,21 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.newssentiment.dto.AiSummaryDTO;
 import com.newssentiment.dto.NarrativeCreateRequest;
 import com.newssentiment.dto.NarrativeDTO;
+import com.newssentiment.dto.SharedUserDTO;
 import com.newssentiment.model.Narrative;
 import com.newssentiment.model.Narrative.NarrativeStatus;
 import com.newssentiment.model.Narrative.ThreatLevel;
+import com.newssentiment.model.NarrativeShare;
+import com.newssentiment.model.User;
 import com.newssentiment.repository.ArticleRepository;
 import com.newssentiment.repository.CoordinationEventRepository;
 import com.newssentiment.repository.FactCheckRepository;
 import com.newssentiment.repository.NarrativeRepository;
+import com.newssentiment.repository.NarrativeShareRepository;
 import com.newssentiment.repository.ThreatAlertRepository;
+import com.newssentiment.repository.UserRepository;
 import com.newssentiment.security.OrganizationContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -32,22 +38,66 @@ import java.util.Optional;
 public class NarrativeService {
 
     private final NarrativeRepository narrativeRepository;
+    private final NarrativeShareRepository narrativeShareRepository;
     private final ThreatAlertRepository alertRepository;
     private final ArticleRepository articleRepository;
     private final CoordinationEventRepository coordinationEventRepository;
     private final FactCheckRepository factCheckRepository;
+    private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
 
     private Long getOrgId() {
         return OrganizationContext.getCurrentOrganizationIdOrNull();
     }
 
+    private User getCurrentUser() {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.getPrincipal() instanceof User) {
+            return (User) authentication.getPrincipal();
+        }
+        return null;
+    }
+
+    private Long getCurrentUserId() {
+        User user = getCurrentUser();
+        return user != null ? user.getId() : null;
+    }
+
     /**
-     * Find all narratives excluding PENDING_REVIEW (default view).
+     * Find all narratives accessible to the current user (owned or shared with them).
+     * Excludes PENDING_REVIEW narratives.
      */
     @Transactional(readOnly = true)
     public Page<NarrativeDTO> findAll(Pageable pageable) {
-        return narrativeRepository.findByOrganizationIdExcludingPendingReview(getOrgId(), pageable).map(this::toDTO);
+        Long userId = getCurrentUserId();
+        if (userId == null) {
+            return Page.empty(pageable);
+        }
+        return narrativeRepository.findAccessibleByUser(getOrgId(), userId, pageable).map(this::toDTO);
+    }
+
+    /**
+     * Find narratives owned by the current user.
+     */
+    @Transactional(readOnly = true)
+    public Page<NarrativeDTO> findMyNarratives(Pageable pageable) {
+        Long userId = getCurrentUserId();
+        if (userId == null) {
+            return Page.empty(pageable);
+        }
+        return narrativeRepository.findByOrganizationIdAndCreatedByIdExcludingPendingReview(getOrgId(), userId, pageable).map(this::toDTO);
+    }
+
+    /**
+     * Find narratives shared with the current user.
+     */
+    @Transactional(readOnly = true)
+    public Page<NarrativeDTO> findSharedWithMe(Pageable pageable) {
+        Long userId = getCurrentUserId();
+        if (userId == null) {
+            return Page.empty(pageable);
+        }
+        return narrativeRepository.findSharedWithUser(getOrgId(), userId, pageable).map(this::toDTO);
     }
 
     /**
@@ -76,7 +126,11 @@ public class NarrativeService {
 
     @Transactional(readOnly = true)
     public Page<NarrativeDTO> findByStatuses(List<NarrativeStatus> statuses, Pageable pageable) {
-        return narrativeRepository.findByOrganizationIdAndStatusIn(getOrgId(), statuses, pageable).map(this::toDTO);
+        Long userId = getCurrentUserId();
+        if (userId == null) {
+            return Page.empty(pageable);
+        }
+        return narrativeRepository.findAccessibleByUserAndStatusIn(getOrgId(), userId, statuses, pageable).map(this::toDTO);
     }
 
     @Transactional(readOnly = true)
@@ -103,8 +157,10 @@ public class NarrativeService {
 
     @Transactional
     public NarrativeDTO create(NarrativeCreateRequest request) {
+        User currentUser = getCurrentUser();
         Narrative narrative = Narrative.builder()
                 .organizationId(getOrgId())
+                .createdBy(currentUser)
                 .name(request.name())
                 .description(request.description())
                 .keywords(request.keywords() != null ? request.keywords().toArray(new String[0]) : null)
@@ -296,6 +352,128 @@ public class NarrativeService {
         return java.util.Arrays.stream(keywords).anyMatch(keyword -> text.contains(keyword.toLowerCase()));
     }
 
+    // ==================== Sharing Methods ====================
+
+    /**
+     * Share a narrative with specified users.
+     */
+    @Transactional
+    public NarrativeDTO shareNarrative(Long narrativeId, List<Long> userIds, boolean canEdit) {
+        User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            throw new IllegalStateException("User not authenticated");
+        }
+
+        Narrative narrative = narrativeRepository.findByIdAndOrganizationId(narrativeId, getOrgId())
+                .orElseThrow(() -> new IllegalArgumentException("Narrative not found"));
+
+        // Check if user is the owner or has edit permission
+        if (!canUserModifyNarrative(narrative, currentUser.getId())) {
+            throw new IllegalStateException("Only the narrative owner can share it");
+        }
+
+        for (Long userId : userIds) {
+            // Don't share with self
+            if (userId.equals(currentUser.getId())) {
+                continue;
+            }
+
+            // Check if user exists and is in the same organization
+            User targetUser = userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+
+            if (!targetUser.getOrganizationId().equals(getOrgId())) {
+                throw new IllegalArgumentException("Cannot share with users outside your organization");
+            }
+
+            // Check if already shared
+            if (!narrativeShareRepository.existsByNarrativeIdAndSharedWithUserId(narrativeId, userId)) {
+                NarrativeShare share = NarrativeShare.builder()
+                        .narrative(narrative)
+                        .sharedWithUser(targetUser)
+                        .sharedByUser(currentUser)
+                        .canEdit(canEdit)
+                        .build();
+                narrativeShareRepository.save(share);
+                log.info("Narrative '{}' shared with user '{}'", narrative.getName(), targetUser.getEmail());
+            }
+        }
+
+        return toDTO(narrative);
+    }
+
+    /**
+     * Remove sharing of a narrative with a specific user.
+     */
+    @Transactional
+    public void unshareNarrative(Long narrativeId, Long userId) {
+        User currentUser = getCurrentUser();
+        if (currentUser == null) {
+            throw new IllegalStateException("User not authenticated");
+        }
+
+        Narrative narrative = narrativeRepository.findByIdAndOrganizationId(narrativeId, getOrgId())
+                .orElseThrow(() -> new IllegalArgumentException("Narrative not found"));
+
+        // Check if user is the owner
+        if (!canUserModifyNarrative(narrative, currentUser.getId())) {
+            throw new IllegalStateException("Only the narrative owner can modify sharing");
+        }
+
+        narrativeShareRepository.deleteByNarrativeIdAndSharedWithUserId(narrativeId, userId);
+        log.info("Narrative '{}' unshared with user id={}", narrative.getName(), userId);
+    }
+
+    /**
+     * Get list of users a narrative is shared with.
+     */
+    @Transactional(readOnly = true)
+    public List<SharedUserDTO> getSharedUsers(Long narrativeId) {
+        // Verify narrative exists and user has access
+        narrativeRepository.findByIdAndOrganizationId(narrativeId, getOrgId())
+                .orElseThrow(() -> new IllegalArgumentException("Narrative not found"));
+
+        return narrativeShareRepository.findByNarrativeId(narrativeId).stream()
+                .map(share -> new SharedUserDTO(
+                        share.getSharedWithUser().getId(),
+                        share.getSharedWithUser().getName(),
+                        share.getSharedWithUser().getEmail(),
+                        share.getCanEdit(),
+                        share.getCreatedAt()
+                ))
+                .toList();
+    }
+
+    /**
+     * Check if a user can modify a narrative (is owner or has edit permission).
+     */
+    private boolean canUserModifyNarrative(Narrative narrative, Long userId) {
+        // Owner can always modify
+        if (narrative.getCreatedBy() != null && narrative.getCreatedBy().getId().equals(userId)) {
+            return true;
+        }
+
+        // Check if shared with edit permission
+        return narrativeShareRepository.findByNarrativeIdAndSharedWithUserId(narrative.getId(), userId)
+                .map(NarrativeShare::getCanEdit)
+                .orElse(false);
+    }
+
+    /**
+     * Check if user has access to a narrative (owns it or it's shared with them).
+     */
+    private boolean canUserAccessNarrative(Narrative narrative, Long userId) {
+        // Owner can access
+        if (narrative.getCreatedBy() != null && narrative.getCreatedBy().getId().equals(userId)) {
+            return true;
+        }
+
+        // Check if shared with user
+        return narrativeShareRepository.existsByNarrativeIdAndSharedWithUserId(narrative.getId(), userId);
+    }
+
+    // ==================== DTO Conversion ====================
+
     private NarrativeDTO toDTO(Narrative narrative) {
         int alertCount = narrative.getAlerts() != null ? narrative.getAlerts().size() : 0;
 
@@ -317,6 +495,34 @@ public class NarrativeService {
             }
         }
 
+        // Get creator info
+        Long createdById = narrative.getCreatedBy() != null ? narrative.getCreatedBy().getId() : null;
+        String createdByName = narrative.getCreatedBy() != null ? narrative.getCreatedBy().getName() : null;
+
+        // Get current user's relationship to this narrative
+        Long currentUserId = getCurrentUserId();
+        boolean isOwner = createdById != null && createdById.equals(currentUserId);
+        boolean isShared = currentUserId != null && !isOwner &&
+                narrativeShareRepository.existsByNarrativeIdAndSharedWithUserId(narrative.getId(), currentUserId);
+        boolean canEdit = isOwner || (isShared &&
+                narrativeShareRepository.findByNarrativeIdAndSharedWithUserId(narrative.getId(), currentUserId)
+                        .map(NarrativeShare::getCanEdit)
+                        .orElse(false));
+
+        // Get shared users (only for owner)
+        List<SharedUserDTO> sharedWith = null;
+        if (isOwner) {
+            sharedWith = narrativeShareRepository.findByNarrativeId(narrative.getId()).stream()
+                    .map(share -> new SharedUserDTO(
+                            share.getSharedWithUser().getId(),
+                            share.getSharedWithUser().getName(),
+                            share.getSharedWithUser().getEmail(),
+                            share.getCanEdit(),
+                            share.getCreatedAt()
+                    ))
+                    .toList();
+        }
+
         return new NarrativeDTO(
                 narrative.getId(),
                 narrative.getName(),
@@ -333,7 +539,13 @@ public class NarrativeService {
                 factCheckCount,
                 hasFactChecks,
                 narrative.getCreatedAt(),
-                aiSummary
+                aiSummary,
+                createdById,
+                createdByName,
+                isOwner,
+                isShared,
+                canEdit,
+                sharedWith
         );
     }
 }

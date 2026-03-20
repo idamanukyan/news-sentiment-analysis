@@ -5,6 +5,8 @@ import com.newssentiment.dto.NarrativeApproveRequest;
 import com.newssentiment.dto.NarrativeCreateRequest;
 import com.newssentiment.dto.NarrativeDTO;
 import com.newssentiment.dto.NarrativeUpdateRequest;
+import com.newssentiment.dto.ShareNarrativeRequest;
+import com.newssentiment.dto.SharedUserDTO;
 import com.newssentiment.model.Article;
 import com.newssentiment.model.Narrative.NarrativeStatus;
 import com.newssentiment.model.Narrative.ThreatLevel;
@@ -38,7 +40,15 @@ public class NarrativeController {
     @GetMapping
     public ResponseEntity<Page<NarrativeDTO>> getAllNarratives(
             @RequestParam(required = false) String status,
+            @RequestParam(required = false, defaultValue = "all") String filter,
             @PageableDefault(size = 20) Pageable pageable) {
+
+        // Handle filter parameter: "mine", "shared", or "all"
+        if ("mine".equalsIgnoreCase(filter)) {
+            return ResponseEntity.ok(narrativeService.findMyNarratives(pageable));
+        } else if ("shared".equalsIgnoreCase(filter)) {
+            return ResponseEntity.ok(narrativeService.findSharedWithMe(pageable));
+        }
 
         if (status != null) {
             List<NarrativeStatus> statuses = Arrays.stream(status.split(","))
@@ -241,6 +251,52 @@ public class NarrativeController {
             return text;
         }
         return text.substring(0, maxLength);
+    }
+
+    // ==================== Sharing Endpoints ====================
+
+    /**
+     * Share a narrative with specified users.
+     */
+    @PostMapping("/{id}/share")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ORG_ADMIN', 'ANALYST')")
+    public ResponseEntity<?> shareNarrative(
+            @PathVariable Long id,
+            @Valid @RequestBody ShareNarrativeRequest request) {
+        try {
+            NarrativeDTO updated = narrativeService.shareNarrative(id, request.userIds(), request.canEdit());
+            return ResponseEntity.ok(updated);
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * Remove sharing of a narrative with a specific user.
+     */
+    @DeleteMapping("/{id}/share/{userId}")
+    @PreAuthorize("hasAnyRole('SUPER_ADMIN', 'ORG_ADMIN', 'ANALYST')")
+    public ResponseEntity<?> unshareNarrative(
+            @PathVariable Long id,
+            @PathVariable Long userId) {
+        try {
+            narrativeService.unshareNarrative(id, userId);
+            return ResponseEntity.noContent().build();
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
+    }
+
+    /**
+     * Get users a narrative is shared with.
+     */
+    @GetMapping("/{id}/shares")
+    public ResponseEntity<List<SharedUserDTO>> getShares(@PathVariable Long id) {
+        return ResponseEntity.ok(narrativeService.getSharedUsers(id));
     }
 
     /**
