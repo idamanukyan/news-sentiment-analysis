@@ -33,11 +33,11 @@ import {
 } from 'lucide-react'
 
 interface AiSummary {
-  whyDetected: string
-  spreadPattern: string
-  threatSignal: 'none' | 'low' | 'medium' | 'high'
-  suggestedTitle: string
-  analystNote: string
+  why_detected: string
+  spread_pattern: string
+  threat_signal: 'none' | 'low' | 'medium' | 'high'
+  suggested_title: string
+  analyst_note: string
 }
 
 interface Narrative {
@@ -237,6 +237,7 @@ export default function NarrativesPage() {
   const queryClient = useQueryClient()
 
   const [selectedNarrative, setSelectedNarrative] = useState<Narrative | null>(null)
+  const [pendingDetailNarrative, setPendingDetailNarrative] = useState<Narrative | null>(null)
   const [filter, setFilter] = useState<'all' | 'active' | 'high'>('all')
   const [ownershipFilter, setOwnershipFilter] = useState<'all' | 'mine' | 'shared'>('all')
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -540,13 +541,13 @@ export default function NarrativesPage() {
             return (
               <div
                 key={narrative.id}
-                onClick={() => !isPending && setSelectedNarrative(narrative)}
-                className={`card p-5 transition-all hover:shadow-md ${
+                onClick={() => isPending ? setPendingDetailNarrative(narrative) : setSelectedNarrative(narrative)}
+                className={`card p-5 transition-all hover:shadow-md cursor-pointer ${
                   isPending
-                    ? 'border-amber-300 bg-amber-50/30 cursor-default'
+                    ? 'border-amber-300 bg-amber-50/30 hover:border-amber-400'
                     : isHighThreat
-                    ? 'border-red-200 hover:border-red-400 cursor-pointer'
-                    : 'hover:border-primary-400 cursor-pointer'
+                    ? 'border-red-200 hover:border-red-400'
+                    : 'hover:border-primary-400'
                 }`}
               >
                 {/* AI Suggested Badge for pending */}
@@ -564,7 +565,7 @@ export default function NarrativesPage() {
                   {isPending ? (
                     <input
                       type="text"
-                      value={editedTitles[narrative.id] ?? (narrative.aiSummary?.suggestedTitle || narrative.name)}
+                      value={editedTitles[narrative.id] ?? (narrative.aiSummary?.suggested_title || narrative.name)}
                       onChange={(e) => {
                         e.stopPropagation()
                         setEditedTitles((prev) => ({ ...prev, [narrative.id]: e.target.value }))
@@ -612,12 +613,12 @@ export default function NarrativesPage() {
                     <div className="flex items-center gap-2 mb-2">
                       <Bot size={14} className="text-amber-600" />
                       <span className="font-medium text-amber-800">AI Analysis</span>
-                      <ThreatSignalBadge signal={narrative.aiSummary.threatSignal} />
+                      <ThreatSignalBadge signal={narrative.aiSummary.threat_signal} />
                     </div>
                     <div className="space-y-1.5 text-gray-700">
-                      <p><span className="font-medium">Why detected:</span> {narrative.aiSummary.whyDetected}</p>
-                      <p><span className="font-medium">Spread:</span> {narrative.aiSummary.spreadPattern}</p>
-                      <p className="italic text-gray-600">{narrative.aiSummary.analystNote}</p>
+                      <p><span className="font-medium">Why detected:</span> {narrative.aiSummary.why_detected}</p>
+                      <p><span className="font-medium">Spread:</span> {narrative.aiSummary.spread_pattern}</p>
+                      <p className="italic text-gray-600">{narrative.aiSummary.analyst_note}</p>
                     </div>
                   </div>
                 ) : isPending && !narrative.aiSummary ? (
@@ -698,7 +699,7 @@ export default function NarrativesPage() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        const title = editedTitles[narrative.id] ?? (narrative.aiSummary?.suggestedTitle || narrative.name)
+                        const title = editedTitles[narrative.id] ?? (narrative.aiSummary?.suggested_title || narrative.name)
                         approveMutation.mutate({ id: narrative.id, title })
                       }}
                       disabled={approveMutation.isPending}
@@ -784,6 +785,29 @@ export default function NarrativesPage() {
         <CreateNarrativeModal
           onClose={() => setShowCreateModal(false)}
           onSuccess={() => setShowCreateModal(false)}
+        />
+      )}
+
+      {/* Pending Narrative Detail Modal */}
+      {pendingDetailNarrative && (
+        <PendingNarrativeDetailModal
+          narrative={pendingDetailNarrative}
+          editedTitle={editedTitles[pendingDetailNarrative.id]}
+          onTitleChange={(title) => setEditedTitles((prev) => ({ ...prev, [pendingDetailNarrative.id]: title }))}
+          onApprove={() => {
+            const title = editedTitles[pendingDetailNarrative.id] ?? (pendingDetailNarrative.aiSummary?.suggested_title || pendingDetailNarrative.name)
+            approveMutation.mutate({ id: pendingDetailNarrative.id, title })
+            setPendingDetailNarrative(null)
+          }}
+          onDismiss={() => {
+            if (confirm('Dismiss this AI-suggested narrative?')) {
+              deleteMutation.mutate(pendingDetailNarrative.id)
+              setPendingDetailNarrative(null)
+            }
+          }}
+          onClose={() => setPendingDetailNarrative(null)}
+          isApproving={approveMutation.isPending}
+          isDismissing={deleteMutation.isPending}
         />
       )}
 
@@ -1753,6 +1777,200 @@ function CreateNarrativeModal({
             </button>
           </div>
         </form>
+      </div>
+    </div>
+  )
+}
+
+// ============================================================================
+// PENDING NARRATIVE DETAIL MODAL
+// ============================================================================
+function PendingNarrativeDetailModal({
+  narrative,
+  editedTitle,
+  onTitleChange,
+  onApprove,
+  onDismiss,
+  onClose,
+  isApproving,
+  isDismissing,
+}: {
+  narrative: Narrative
+  editedTitle?: string
+  onTitleChange: (title: string) => void
+  onApprove: () => void
+  onDismiss: () => void
+  onClose: () => void
+  isApproving: boolean
+  isDismissing: boolean
+}) {
+  const { data: articlesData, isLoading } = useQuery({
+    queryKey: ['narrative-articles-pending', narrative.id],
+    queryFn: async () => {
+      const res = await narrativesApi.getArticles(narrative.id, { size: 10 })
+      return res.data
+    },
+  })
+
+  const articles = articlesData?.content || []
+  const title = editedTitle ?? (narrative.aiSummary?.suggested_title || narrative.name)
+
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={onClose}>
+      <div
+        className="card p-0 max-w-3xl w-full max-h-[90vh] overflow-hidden flex flex-col animate-fade-in"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="bg-amber-50 border-b border-amber-200 px-6 py-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded flex items-center gap-1">
+                <Bot size={10} />
+                AI Suggested
+              </span>
+              <ThreatBadge level={narrative.threatLevel} />
+              {narrative.aiSummary && (
+                <ThreatSignalBadge signal={narrative.aiSummary.threat_signal} />
+              )}
+            </div>
+            <button onClick={onClose} className="p-1 hover:bg-amber-100 rounded">
+              <X size={18} className="text-gray-600" />
+            </button>
+          </div>
+          <div>
+            <label className="text-xs text-gray-600 uppercase tracking-wide mb-1 block">Narrative Title</label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => onTitleChange(e.target.value)}
+              className="w-full px-3 py-2 text-lg font-semibold text-gray-900 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
+              placeholder="Narrative title..."
+            />
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto">
+          {/* AI Analysis Section */}
+          {narrative.aiSummary && (
+            <div className="px-6 py-4 border-b bg-white">
+              <div className="flex items-center gap-2 mb-3">
+                <Bot size={16} className="text-amber-600" />
+                <span className="font-semibold text-gray-800">AI Analysis</span>
+              </div>
+              <div className="space-y-3">
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Why Detected</p>
+                  <p className="text-gray-700">{narrative.aiSummary.why_detected || 'Not available'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Spread Pattern</p>
+                  <p className="text-gray-700">{narrative.aiSummary.spread_pattern || 'Not available'}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Analyst Note</p>
+                  <p className="text-gray-600 italic">{narrative.aiSummary.analyst_note || 'Not available'}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Keywords */}
+          <div className="px-6 py-4 border-b bg-gray-50">
+            <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Keywords</p>
+            <div className="flex flex-wrap gap-2">
+              {(narrative.keywords || []).map((kw) => (
+                <span
+                  key={kw}
+                  className="px-3 py-1 bg-primary-100 text-primary-800 text-sm rounded-full font-medium"
+                >
+                  {kw}
+                </span>
+              ))}
+              {(!narrative.keywords || narrative.keywords.length === 0) && (
+                <span className="text-gray-500 text-sm">No keywords</span>
+              )}
+            </div>
+          </div>
+
+          {/* Stats */}
+          <div className="px-6 py-4 border-b grid grid-cols-3 gap-4">
+            <div>
+              <p className="text-xs text-gray-500 uppercase tracking-wide">Articles</p>
+              <p className="text-xl font-bold text-gray-900">{narrative.articleCount || 0}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 uppercase tracking-wide">First Detected</p>
+              <p className="text-sm font-medium text-gray-900">{formatDate(narrative.firstSeen)}</p>
+            </div>
+            <div>
+              <p className="text-xs text-gray-500 uppercase tracking-wide">Last Seen</p>
+              <p className="text-sm font-medium text-gray-900">{formatDate(narrative.lastSeen)}</p>
+            </div>
+          </div>
+
+          {/* Sample Articles */}
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-xs text-gray-500 uppercase tracking-wide">Sample Articles</p>
+              {isLoading && <span className="text-xs text-gray-500">Loading...</span>}
+            </div>
+            {articles.length > 0 ? (
+              <div className="space-y-3">
+                {articles.map((article: NarrativeArticle) => (
+                  <div key={article.id} className="p-3 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      <SourceTypeBadge sourceType={article.sourceType} />
+                      <span className="text-sm text-gray-600">{article.sourceName}</span>
+                      <SentimentDot sentiment={article.sentiment} />
+                      <span className="text-xs text-gray-500 ml-auto">
+                        {formatRelativeTime(article.publishedAt)}
+                      </span>
+                    </div>
+                    <a
+                      href={article.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary-600 hover:text-primary-700 font-medium text-sm flex items-center gap-1 group"
+                    >
+                      {article.title}
+                      <ExternalLink size={12} className="opacity-0 group-hover:opacity-100" />
+                    </a>
+                    {article.snippet && (
+                      <p className="text-xs text-gray-600 mt-1 line-clamp-2">{article.snippet}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : !isLoading ? (
+              <div className="text-center py-8 text-gray-500">
+                <FileText size={24} className="mx-auto mb-2 text-gray-400" />
+                <p className="text-sm">No articles found for this narrative</p>
+              </div>
+            ) : null}
+          </div>
+        </div>
+
+        {/* Footer Actions */}
+        <div className="px-6 py-4 border-t bg-gray-50 flex gap-3">
+          <button
+            onClick={onDismiss}
+            disabled={isDismissing}
+            className="flex-1 btn bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
+          >
+            <Trash2 size={16} />
+            {isDismissing ? 'Dismissing...' : 'Dismiss'}
+          </button>
+          <button
+            onClick={onApprove}
+            disabled={isApproving}
+            className="flex-1 btn bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
+          >
+            <Check size={16} />
+            {isApproving ? 'Approving...' : 'Approve Narrative'}
+          </button>
+        </div>
       </div>
     </div>
   )
