@@ -821,6 +821,31 @@ export default function SourcesPage() {
                 />
               </div>
 
+              {formData.type === 'FACEBOOK' && (
+                <div>
+                  <label className="label">
+                    Fallback Website URL
+                    <span className="text-gray-400 font-normal ml-1">(optional)</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={(formData.config?.website_url as string) || ''}
+                    onChange={e => setFormData({
+                      ...formData,
+                      config: {
+                        ...formData.config,
+                        website_url: e.target.value || undefined
+                      }
+                    })}
+                    className="input"
+                    placeholder="https://example.com - used if Facebook scraping fails"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    If Facebook scraping fails, articles will be fetched from this website instead
+                  </p>
+                </div>
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="label">Language</label>
