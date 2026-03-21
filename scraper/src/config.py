@@ -16,6 +16,12 @@ class Settings(BaseSettings):
     # OpenAI (fallback)
     openai_api_key: str = ""
 
+    # Langfuse (LLM observability)
+    langfuse_public_key: str = ""
+    langfuse_secret_key: str = ""
+    langfuse_host: str = "https://cloud.langfuse.com"
+    langfuse_enabled: bool = True
+
     # NewsAPI.org for global news search
     newsapi_key: str = ""
 

@@ -65,6 +65,9 @@ dependencies {
     // Anthropic SDK for AI tasks
     implementation 'com.anthropic:anthropic-java:2.17.0'
 
+    // Langfuse for LLM observability
+    implementation 'com.langfuse:langfuse-java:0.2.0'
+
     // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'

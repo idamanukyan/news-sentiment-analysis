@@ -20,6 +20,7 @@ apscheduler==3.10.4
 # AI/ML
 anthropic==0.18.0
 openai==1.10.0
+langfuse==2.43.3
 scikit-learn==1.4.0
 numpy==1.26.3
 pandas==2.1.4

@@ -22,6 +22,7 @@ from ..config import get_settings
 from ..models import Article, SentimentResult
 from ..database import get_db
 from ..budget_tracker import can_spend, add_spend, increment_stat, log_daily_report
+from ..llm_client import create_message
 
 logger = structlog.get_logger()
 settings = get_settings()
@@ -119,22 +120,28 @@ def analyze_batch_with_claude(articles: List[Dict[str, Any]]) -> List[Dict[str, 
         logger.error("anthropic_api_key_not_configured", message="ANTHROPIC_API_KEY is not set or too short")
         return []
 
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-
     # Format articles for the prompt
     articles_text = ""
+    article_ids = []
     for i, art in enumerate(articles, 1):
         content = truncate_content(art.get('content', '') or art.get('title', ''))
         articles_text += f"\n[Article {i}] ID:{art['id']}\nTitle: {art['title']}\nContent: {content}\n"
+        article_ids.append(art['id'])
 
     prompt = BATCH_ANALYSIS_PROMPT.format(articles=articles_text)
 
     # Using Haiku for cost optimization (~10x cheaper than Sonnet, sufficient for translation/sentiment/clustering)
     try:
-        message = client.messages.create(
+        message = create_message(
             model="claude-haiku-4-5-20251001",
             max_tokens=1500,  # ~300 tokens per article in batch
-            messages=[{"role": "user", "content": prompt}]
+            messages=[{"role": "user", "content": prompt}],
+            trace_name="batch_sentiment_analysis",
+            trace_metadata={
+                "batch_size": len(articles),
+                "article_ids": article_ids,
+                "task": "sentiment_analysis"
+            }
         )
     except anthropic.AuthenticationError as e:
         logger.error("anthropic_authentication_error", error=str(e), message="Check ANTHROPIC_API_KEY env var")
@@ -179,16 +186,19 @@ def analyze_single_with_claude(article_id: int, title: str, content: str) -> Opt
     if not can_spend():
         return None
 
-    client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
-
     content = truncate_content(content)
     prompt = SINGLE_ANALYSIS_PROMPT.format(title=title, content=content)
 
     # Using Haiku for cost optimization (~10x cheaper than Sonnet, sufficient for translation/sentiment/clustering)
-    message = client.messages.create(
+    message = create_message(
         model="claude-haiku-4-5-20251001",
         max_tokens=400,
-        messages=[{"role": "user", "content": prompt}]
+        messages=[{"role": "user", "content": prompt}],
+        trace_name="single_sentiment_analysis",
+        trace_metadata={
+            "article_id": article_id,
+            "task": "sentiment_analysis_fallback"
+        }
     )
 
     total_spend = add_spend(message.usage.input_tokens, message.usage.output_tokens)

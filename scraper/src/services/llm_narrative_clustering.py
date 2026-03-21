@@ -21,12 +21,12 @@ from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional, Tuple
 from collections import defaultdict
 
-from anthropic import Anthropic
 from sqlalchemy import text
 
 from ..config import get_settings
 from ..database import get_db
 from ..budget_tracker import can_spend, add_spend
+from ..llm_client import create_message
 
 logger = structlog.get_logger()
 settings = get_settings()
@@ -61,7 +61,6 @@ class LLMNarrativeClustering:
     """
 
     def __init__(self):
-        self.anthropic = Anthropic(api_key=settings.anthropic_api_key)
         # Using Haiku for cost optimization (~10x cheaper than Sonnet, sufficient for translation/sentiment/clustering)
         self.model = "claude-haiku-4-5-20251001"
         self.batch_size = 10
@@ -157,11 +156,13 @@ Respond with ONLY this JSON format:
                     logger.warning("budget_exhausted_using_fallback")
                     return self.classify_article_rule_based(title, content)
 
-                response = self.anthropic.messages.create(
+                response = create_message(
                     model=self.model,
                     max_tokens=200,
                     system=system_prompt,
-                    messages=[{"role": "user", "content": user_prompt}]
+                    messages=[{"role": "user", "content": user_prompt}],
+                    trace_name="classify_article",
+                    trace_metadata={"task": "topic_classification"}
                 )
 
                 # Track spending
@@ -469,10 +470,12 @@ Rules:
                 logger.warning("budget_exhausted_skipping_llm_clustering", topic=topic)
                 return self._cluster_by_keywords(articles, min_cluster_size)
 
-            response = self.anthropic.messages.create(
+            response = create_message(
                 model=self.model,
                 max_tokens=2000,
-                messages=[{"role": "user", "content": prompt}]
+                messages=[{"role": "user", "content": prompt}],
+                trace_name="cluster_by_subtopic",
+                trace_metadata={"topic": topic, "article_count": len(articles), "task": "narrative_clustering"}
             )
 
             # Track spending
@@ -692,10 +695,16 @@ Respond with ONLY this JSON object (no other text):
                 logger.warning("budget_exhausted_skipping_ai_summary")
                 return None
 
-            response = self.anthropic.messages.create(
+            response = create_message(
                 model=self.model,
                 max_tokens=500,
-                messages=[{"role": "user", "content": prompt}]
+                messages=[{"role": "user", "content": prompt}],
+                trace_name="generate_ai_summary",
+                trace_metadata={
+                    "article_count": len(articles),
+                    "topic": cluster.get("topic", "Unknown"),
+                    "task": "narrative_ai_summary"
+                }
             )
 
             # Track spending

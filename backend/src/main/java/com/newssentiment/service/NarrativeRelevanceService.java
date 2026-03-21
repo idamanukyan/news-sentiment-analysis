@@ -5,6 +5,9 @@ import com.anthropic.models.messages.Message;
 import com.anthropic.models.messages.MessageCreateParams;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.langfuse.model.Generation;
+import com.langfuse.model.Trace;
+import com.newssentiment.config.LangfuseConfig;
 import com.newssentiment.model.Article;
 import com.newssentiment.model.ArticleNarrative;
 import com.newssentiment.model.Narrative;
@@ -16,8 +19,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -28,6 +32,7 @@ public class NarrativeRelevanceService {
     private final AnthropicClient anthropicClient;
     private final ArticleNarrativeRepository articleNarrativeRepository;
     private final ObjectMapper objectMapper;
+    private final LangfuseConfig langfuseConfig;
 
     @Value("${app.anthropic.model:claude-3-haiku-20240307}")
     private String modelId;
@@ -213,6 +218,30 @@ public class NarrativeRelevanceService {
                 articleContent != null ? articleContent : ""
         );
 
+        // Create Langfuse trace for observability
+        Optional<Trace> trace = langfuseConfig.createTrace(
+                "narrative_relevance_evaluation",
+                Map.of(
+                        "article_id", article.getId(),
+                        "narrative_id", narrative.getId(),
+                        "narrative_name", narrative.getName(),
+                        "task", "relevance_evaluation"
+                )
+        );
+
+        Optional<Generation> generation = trace.flatMap(t ->
+                langfuseConfig.createGeneration(
+                        t,
+                        "evaluate_relevance",
+                        modelId,
+                        prompt,
+                        Map.of(
+                                "article_id", article.getId(),
+                                "narrative_id", narrative.getId()
+                        )
+                )
+        );
+
         try {
             MessageCreateParams params = MessageCreateParams.builder()
                     .model(modelId)
@@ -229,11 +258,23 @@ public class NarrativeRelevanceService {
                     .findFirst()
                     .orElse("");
 
+            // Get token usage from response
+            Integer inputTokens = response.usage() != null ? (int) response.usage().inputTokens() : null;
+            Integer outputTokens = response.usage() != null ? (int) response.usage().outputTokens() : null;
+
+            // End Langfuse generation with output
+            generation.ifPresent(g -> langfuseConfig.endGeneration(g, responseText, inputTokens, outputTokens));
+            trace.ifPresent(langfuseConfig::endTrace);
+
             return parseRelevanceResponse(responseText);
 
         } catch (Exception e) {
             log.error("Error calling Anthropic API for article {}: {}",
                     article.getId(), e.getMessage());
+
+            // End trace with error
+            trace.ifPresent(langfuseConfig::endTrace);
+
             throw new RuntimeException("Failed to evaluate relevance", e);
         }
     }

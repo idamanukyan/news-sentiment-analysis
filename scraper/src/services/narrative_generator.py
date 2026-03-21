@@ -15,11 +15,11 @@ import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.cluster import AgglomerativeClustering
 from sqlalchemy import text
-from anthropic import Anthropic
 
 from ..config import get_settings
 from ..database import get_db
 from ..budget_tracker import can_spend, add_spend
+from ..llm_client import create_message
 
 logger = structlog.get_logger()
 settings = get_settings()
@@ -44,7 +44,6 @@ class NarrativeGenerator:
     """Generates narrative clusters from article content using ML."""
 
     def __init__(self):
-        self.anthropic = Anthropic(api_key=settings.anthropic_api_key)
         # Extended stopwords including HTML artifacts and common noise
         custom_stopwords = [
             'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
@@ -245,10 +244,15 @@ Sample headlines:
                 return f"Narrative: {', '.join(keywords[:3])}"
 
             # Using Haiku for cost optimization (~10x cheaper than Sonnet, sufficient for translation/sentiment/clustering)
-            response = self.anthropic.messages.create(
+            response = create_message(
                 model="claude-haiku-4-5-20251001",
                 max_tokens=50,
-                messages=[{"role": "user", "content": prompt}]
+                messages=[{"role": "user", "content": prompt}],
+                trace_name="generate_narrative_title",
+                trace_metadata={
+                    "keywords": keywords,
+                    "task": "narrative_title_generation"
+                }
             )
 
             # Track spending

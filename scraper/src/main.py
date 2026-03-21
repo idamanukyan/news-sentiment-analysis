@@ -1,8 +1,10 @@
 import structlog
+import atexit
 from apscheduler.schedulers.blocking import BlockingScheduler
 from apscheduler.triggers.interval import IntervalTrigger
 
 from .config import get_settings
+from .llm_client import get_langfuse, flush_langfuse, shutdown_langfuse
 from .sources.rss_fetcher import fetch_all_rss_sources
 from .sources.web_scraper import fetch_all_web_sources
 from .sources.telegram_client import fetch_all_telegram_sources
@@ -165,11 +167,17 @@ def main():
     """Main entry point for the scraper service."""
     # Startup diagnostics - check API key configuration
     has_anthropic_key = bool(settings.anthropic_api_key and len(settings.anthropic_api_key) > 10)
+
+    # Initialize Langfuse for LLM observability
+    langfuse_client = get_langfuse()
+    has_langfuse = langfuse_client is not None
+
     logger.info(
         "starting_scraper_service",
         interval=settings.scrape_interval_minutes,
         anthropic_key_configured=has_anthropic_key,
-        anthropic_key_prefix=settings.anthropic_api_key[:15] + "..." if has_anthropic_key else "NOT SET"
+        anthropic_key_prefix=settings.anthropic_api_key[:15] + "..." if has_anthropic_key else "NOT SET",
+        langfuse_enabled=has_langfuse
     )
 
     if not has_anthropic_key:
@@ -177,6 +185,9 @@ def main():
             "anthropic_api_key_missing",
             message="ANTHROPIC_API_KEY environment variable is not set. AI features will not work."
         )
+
+    # Register Langfuse shutdown handler
+    atexit.register(shutdown_langfuse)
 
     # Run immediately on startup
     run_fetch_job()
@@ -276,6 +287,7 @@ def main():
         scheduler.start()
     except (KeyboardInterrupt, SystemExit):
         logger.info("scheduler_shutdown")
+        flush_langfuse()  # Ensure all traces are sent
 
 
 if __name__ == "__main__":
