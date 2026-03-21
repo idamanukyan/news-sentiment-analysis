@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '../contexts/authStore'
 import { useOnboardingTour } from '../components/OnboardingTour'
 import { useThemeStore, Theme } from '../contexts/themeStore'
@@ -26,6 +27,7 @@ import {
 } from 'lucide-react'
 
 export default function SettingsPage() {
+  const { t } = useTranslation()
   const user = useAuthStore((state) => state.user)
   const organization = useAuthStore((state) => state.organization)
   const { resetTour, isTourCompleted } = useOnboardingTour()
@@ -61,7 +63,7 @@ export default function SettingsPage() {
     mutationFn: userApi.updateNotificationPreferences,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notification-preferences'] })
-      toast.success('Notification preferences saved')
+      toast.success(t('settings.notifications.preferencesSaved'))
     },
   })
 
@@ -69,7 +71,7 @@ export default function SettingsPage() {
   const testReportMutation = useMutation({
     mutationFn: (type: 'DAILY' | 'WEEKLY') => userApi.sendTestReport(type),
     onSuccess: () => {
-      toast.success('Test report sent! Check your email.')
+      toast.success(t('settings.notifications.testReportSent'))
     },
   })
 

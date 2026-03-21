@@ -6,6 +6,10 @@ import App from './App'
 import './index.css'
 // Initialize theme store to apply dark/light mode on load
 import './contexts/themeStore'
+// Initialize i18n for internationalization
+import './i18n'
+// Initialize language store
+import './contexts/languageStore'
 
 const queryClient = new QueryClient({
   defaultOptions: {

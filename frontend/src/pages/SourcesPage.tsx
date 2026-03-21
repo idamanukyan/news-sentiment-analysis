@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
 import { sourcesApi } from '../services/api'
 import { useAuthStore } from '../contexts/authStore'
 import {
@@ -303,6 +304,7 @@ function formatDate(dateString?: string) {
 }
 
 export default function SourcesPage() {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const canManageSources = useAuthStore((state) => state.canManageSources)
   const isAdmin = canManageSources()
@@ -342,7 +344,7 @@ export default function SourcesPage() {
       queryClient.invalidateQueries({ queryKey: ['sources'] })
       queryClient.invalidateQueries({ queryKey: ['sources-stats'] })
       setError(null)
-      toast.success('Source created successfully')
+      toast.success(t('sources.sourceCreated'))
       closeModal()
     },
     onError: (err: Error & { response?: { data?: { message?: string } } }) => {
@@ -356,7 +358,7 @@ export default function SourcesPage() {
       queryClient.invalidateQueries({ queryKey: ['sources'] })
       queryClient.invalidateQueries({ queryKey: ['sources-stats'] })
       setError(null)
-      toast.success('Source updated successfully')
+      toast.success(t('sources.sourceUpdated'))
       closeModal()
     },
     onError: (err: Error & { response?: { data?: { message?: string } } }) => {
@@ -370,7 +372,7 @@ export default function SourcesPage() {
       queryClient.invalidateQueries({ queryKey: ['sources'] })
       queryClient.invalidateQueries({ queryKey: ['sources-stats'] })
       const source = sources.find(s => s.id === id)
-      toast.success(source?.active ? 'Source disabled' : 'Source enabled')
+      toast.success(source?.active ? t('sources.sourceDisabled') : t('sources.sourceEnabled'))
     },
   })
 
@@ -379,7 +381,7 @@ export default function SourcesPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sources'] })
       queryClient.invalidateQueries({ queryKey: ['sources-stats'] })
-      toast.success('Source deleted')
+      toast.success(t('sources.sourceDeleted'))
       setDeleteConfirm(null)
     },
   })

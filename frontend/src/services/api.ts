@@ -199,7 +199,7 @@ import type { SharedUser } from '../types'
 
 // Narratives endpoints
 export const narrativesApi = {
-  getAll: (params?: { status?: string; threatLevel?: string; filter?: 'all' | 'mine' | 'shared' }) =>
+  getAll: (params?: { status?: string; threatLevel?: string; filter?: 'all' | 'mine' | 'shared'; fromDate?: string; toDate?: string }) =>
     api.get('/narratives', { params }),
   getById: (id: number) => api.get(`/narratives/${id}`),
   getArticles: (id: number, params?: { page?: number; size?: number }) =>

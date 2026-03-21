@@ -1,7 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
 import { articlesApi, topicsApi, sourcesApi, narrativesApi, bookmarksApi } from '../services/api'
+import { useDateRangeStore } from '../contexts/dateRangeStore'
 import { useWebSocket } from '../hooks/useWebSocket'
 import type { ArticleFilterParams } from '../services/api'
 import type { Article, Topic, PageResponse } from '../types'
@@ -31,33 +33,33 @@ import {
 } from 'lucide-react'
 
 const SENTIMENTS = [
-  { value: '', label: 'All Sentiments' },
-  { value: 'POSITIVE', label: 'Positive' },
-  { value: 'NEGATIVE', label: 'Negative' },
-  { value: 'NEUTRAL', label: 'Neutral' },
+  { value: '', labelKey: 'filters.allSentiments' },
+  { value: 'POSITIVE', labelKey: 'filters.positive' },
+  { value: 'NEGATIVE', labelKey: 'filters.negative' },
+  { value: 'NEUTRAL', labelKey: 'filters.neutral' },
 ]
 
 const LANGUAGES = [
-  { value: '', label: 'All Languages' },
-  { value: 'ARMENIAN', label: 'Armenian' },
-  { value: 'RUSSIAN', label: 'Russian' },
-  { value: 'ENGLISH', label: 'English' },
+  { value: '', labelKey: 'filters.allLanguages' },
+  { value: 'ARMENIAN', labelKey: 'filters.armenian' },
+  { value: 'RUSSIAN', labelKey: 'filters.russian' },
+  { value: 'ENGLISH', labelKey: 'filters.english' },
 ]
 
 const SOURCE_TYPES = [
-  { value: '', label: 'All Types' },
-  { value: 'RSS', label: 'RSS Feeds' },
-  { value: 'TELEGRAM', label: 'Telegram' },
-  { value: 'FACEBOOK', label: 'Facebook' },
-  { value: 'WEB_SCRAPE', label: 'Web Scrape' },
+  { value: '', labelKey: 'filters.allTypes' },
+  { value: 'RSS', labelKey: 'filters.rssFeeds' },
+  { value: 'TELEGRAM', labelKey: 'filters.telegram' },
+  { value: 'FACEBOOK', labelKey: 'filters.facebook' },
+  { value: 'WEB_SCRAPE', labelKey: 'filters.webScrape' },
 ]
 
 const DATE_PRESETS = [
-  { value: '', label: 'All Time' },
-  { value: '24h', label: 'Last 24 Hours' },
-  { value: '7d', label: 'Last 7 Days' },
-  { value: '30d', label: 'Last 30 Days' },
-  { value: 'today', label: 'Today' },
+  { value: '', labelKey: 'dateRanges.allTime' },
+  { value: '24h', labelKey: 'dateRanges.last24Hours' },
+  { value: '7d', labelKey: 'dateRanges.last7Days' },
+  { value: '30d', labelKey: 'dateRanges.last30Days' },
+  { value: 'today', labelKey: 'dateRanges.today' },
 ]
 
 const SUGGESTED_CHANNELS = [
@@ -228,6 +230,7 @@ interface Narrative {
 // ============================================================================
 
 export default function NewsPage() {
+  const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<'content' | 'telegram'>('content')
 
   return (
@@ -244,8 +247,8 @@ export default function NewsPage() {
             }`}
           >
             <Newspaper size={16} />
-            <span className="hidden sm:inline">All Content</span>
-            <span className="sm:hidden">Content</span>
+            <span className="hidden sm:inline">{t('news.tabs.allContent')}</span>
+            <span className="sm:hidden">{t('news.tabs.content')}</span>
           </button>
           <button
             onClick={() => setActiveTab('telegram')}
@@ -256,8 +259,8 @@ export default function NewsPage() {
             }`}
           >
             <Radio size={16} />
-            <span className="hidden sm:inline">Telegram Channels</span>
-            <span className="sm:hidden">Telegram</span>
+            <span className="hidden sm:inline">{t('news.tabs.telegramChannels')}</span>
+            <span className="sm:hidden">{t('news.tabs.telegram')}</span>
           </button>
         </nav>
       </div>
@@ -273,7 +276,9 @@ export default function NewsPage() {
 // ============================================================================
 
 function ContentFeedTab() {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
+  const { dateRange, getDateRange } = useDateRangeStore()
 
   // WebSocket for real-time article updates
   const onArticleUpdate = useCallback(() => {
@@ -292,7 +297,7 @@ function ContentFeedTab() {
     sentiment: '',
     language: '',
     sourceType: '',
-    datePreset: '',
+    datePreset: '', // Keep for local custom range override
     fromDate: '',
     toDate: '',
     q: '',
@@ -343,7 +348,7 @@ function ContentFeedTab() {
   const narratives = narrativesData?.content || []
 
   const { data: articlesData, isLoading } = useQuery({
-    queryKey: ['news-articles', filters],
+    queryKey: ['news-articles', filters, dateRange],
     queryFn: async () => {
       const params: ArticleFilterParams = {
         page: filters.page,
@@ -358,12 +363,17 @@ function ContentFeedTab() {
       if (filters.q) params.q = filters.q
       if (filters.searchContent) params.searchContent = true
 
-      // Custom date range takes priority over preset
+      // Custom date range takes priority over preset, then global date range
       if (filters.fromDate) {
         params.from = new Date(filters.fromDate).toISOString()
-      } else {
+      } else if (filters.datePreset) {
         const fromDate = getDateFromPreset(filters.datePreset)
         if (fromDate) params.from = fromDate
+      } else {
+        // Use global date range from header
+        const globalRange = getDateRange()
+        if (globalRange.from) params.from = globalRange.from.toISOString()
+        if (globalRange.to) params.to = globalRange.to.toISOString()
       }
       if (filters.toDate) {
         // Set to end of day for the to date
@@ -511,7 +521,7 @@ function ContentFeedTab() {
                 className="input"
               >
                 {SENTIMENTS.map((s) => (
-                  <option key={s.value} value={s.value}>{s.label}</option>
+                  <option key={s.value} value={s.value}>{t(s.labelKey)}</option>
                 ))}
               </select>
             </div>
@@ -535,9 +545,9 @@ function ContentFeedTab() {
                     className="input"
                   >
                     {DATE_PRESETS.map((d) => (
-                      <option key={d.value} value={d.value}>{d.label}</option>
+                      <option key={d.value} value={d.value}>{t(d.labelKey)}</option>
                     ))}
-                    <option value="custom">Custom Range...</option>
+                    <option value="custom">{t('dateRanges.customRange')}</option>
                   </select>
                 </div>
               ) : (
@@ -548,7 +558,7 @@ function ContentFeedTab() {
                     onChange={(e) => setFilters({ ...filters, fromDate: e.target.value, datePreset: '', page: 0 })}
                     className="input text-sm flex-1"
                   />
-                  <span className="text-gray-400 text-sm">to</span>
+                  <span className="text-gray-400 text-sm">{t('common.to')}</span>
                   <input
                     type="date"
                     value={filters.toDate}
@@ -573,8 +583,8 @@ function ContentFeedTab() {
                 onChange={(e) => handleFilterChange('sourceType', e.target.value)}
                 className="input"
               >
-                {SOURCE_TYPES.map((t) => (
-                  <option key={t.value} value={t.value}>{t.label}</option>
+                {SOURCE_TYPES.map((st) => (
+                  <option key={st.value} value={st.value}>{t(st.labelKey)}</option>
                 ))}
               </select>
             </div>
@@ -717,14 +727,14 @@ function ContentFeedTab() {
 
               {/* Language */}
               <div>
-                <label className="label">Language</label>
+                <label className="label">{t('language.armenian').split(' ')[0] === t('language.armenian') ? 'Language' : t('filters.allLanguages').replace('All ', '')}</label>
                 <select
                   value={filters.language}
                   onChange={(e) => handleFilterChange('language', e.target.value)}
                   className="input"
                 >
                   {LANGUAGES.map((l) => (
-                    <option key={l.value} value={l.value}>{l.label}</option>
+                    <option key={l.value} value={l.value}>{t(l.labelKey)}</option>
                   ))}
                 </select>
               </div>
@@ -740,7 +750,7 @@ function ContentFeedTab() {
                 onChange={(e) => handleFilterChange('searchContent', e.target.checked)}
                 className="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded mr-2"
               />
-              Search in article content (slower)
+              {t('filters.searchInContent')}
             </label>
           </div>
         </div>

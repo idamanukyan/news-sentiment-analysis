@@ -1,8 +1,9 @@
 import { Outlet, Link, useLocation, useNavigate } from 'react-router-dom'
 import { useState, useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import toast from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
 import { useAuthStore, UserRole } from '../contexts/authStore'
+import { useLanguageStore } from '../contexts/languageStore'
 import GlobalSearch from './GlobalSearch'
 import OnboardingTour from './OnboardingTour'
 import MobileBottomNav from './MobileBottomNav'
@@ -30,48 +31,49 @@ import {
   Bookmark,
 } from 'lucide-react'
 import { useThemeStore } from '../contexts/themeStore'
+import { useDateRangeStore, DateRangeValue } from '../contexts/dateRangeStore'
 import { useKeyboardShortcuts, ShortcutConfig } from '../hooks/useKeyboardShortcuts'
 import KeyboardShortcutsHelp from './KeyboardShortcutsHelp'
 
 interface NavItem {
   path: string
-  label: string
+  labelKey: string
   icon: React.ReactNode
   roles?: UserRole[]
   section?: 'main' | 'admin'
 }
 
 const navItems: NavItem[] = [
-  { path: '/election', label: 'Dashboard', icon: <LayoutDashboard size={20} />, section: 'main' },
-  { path: '/news', label: 'Content Feed', icon: <Newspaper size={20} />, section: 'main' },
-  { path: '/bookmarks', label: 'Bookmarks', icon: <Bookmark size={20} />, section: 'main' },
-  { path: '/narratives', label: 'Narratives', icon: <MessageSquare size={20} />, section: 'main' },
-  { path: '/alerts', label: 'Alerts', icon: <Bell size={20} />, section: 'main' },
-  { path: '/team', label: 'Team', icon: <MessageCircle size={20} />, section: 'main' },
-  { path: '/alert-rules', label: 'Alert Rules', icon: <SlidersHorizontal size={20} />, section: 'admin', roles: ['SUPER_ADMIN', 'ORG_ADMIN', 'ANALYST'] },
-  { path: '/sources', label: 'Sources', icon: <Database size={20} />, section: 'admin' },
-  { path: '/topics', label: 'Topics', icon: <Tags size={20} />, section: 'admin' },
-  { path: '/reports', label: 'Reports', icon: <FileText size={20} />, section: 'admin', roles: ['SUPER_ADMIN', 'ORG_ADMIN', 'ANALYST'] },
-  { path: '/team/settings', label: 'Team Settings', icon: <Users size={20} />, section: 'admin', roles: ['SUPER_ADMIN', 'ORG_ADMIN'] },
-  { path: '/admin', label: 'Admin Panel', icon: <Building2 size={20} />, section: 'admin', roles: ['SUPER_ADMIN'] },
-  { path: '/guide', label: 'User Guide', icon: <BookOpen size={20} />, section: 'admin' },
+  { path: '/election', labelKey: 'nav.dashboard', icon: <LayoutDashboard size={20} />, section: 'main' },
+  { path: '/news', labelKey: 'nav.contentFeed', icon: <Newspaper size={20} />, section: 'main' },
+  { path: '/bookmarks', labelKey: 'nav.bookmarks', icon: <Bookmark size={20} />, section: 'main' },
+  { path: '/narratives', labelKey: 'nav.narratives', icon: <MessageSquare size={20} />, section: 'main' },
+  { path: '/alerts', labelKey: 'nav.alerts', icon: <Bell size={20} />, section: 'main' },
+  { path: '/team', labelKey: 'nav.team', icon: <MessageCircle size={20} />, section: 'main' },
+  { path: '/alert-rules', labelKey: 'nav.alertRules', icon: <SlidersHorizontal size={20} />, section: 'admin', roles: ['SUPER_ADMIN', 'ORG_ADMIN', 'ANALYST'] },
+  { path: '/sources', labelKey: 'nav.sources', icon: <Database size={20} />, section: 'admin' },
+  { path: '/topics', labelKey: 'nav.topics', icon: <Tags size={20} />, section: 'admin' },
+  { path: '/reports', labelKey: 'nav.reports', icon: <FileText size={20} />, section: 'admin', roles: ['SUPER_ADMIN', 'ORG_ADMIN', 'ANALYST'] },
+  { path: '/team/settings', labelKey: 'nav.teamSettings', icon: <Users size={20} />, section: 'admin', roles: ['SUPER_ADMIN', 'ORG_ADMIN'] },
+  { path: '/admin', labelKey: 'nav.adminPanel', icon: <Building2 size={20} />, section: 'admin', roles: ['SUPER_ADMIN'] },
+  { path: '/guide', labelKey: 'nav.userGuide', icon: <BookOpen size={20} />, section: 'admin' },
 ]
 
-const pageTitles: Record<string, string> = {
-  '/election': 'Dashboard',
-  '/news': 'Content Feed',
-  '/bookmarks': 'Bookmarks',
-  '/narratives': 'Narrative Tracking',
-  '/alerts': 'Threat Alerts',
-  '/alert-rules': 'Alert Rules',
-  '/sources': 'Source Management',
-  '/topics': 'Topic Tracking',
-  '/reports': 'Reports',
-  '/settings': 'Settings',
-  '/guide': 'User Guide',
-  '/team': 'Team Discussions',
-  '/team/settings': 'Team Settings',
-  '/admin': 'Admin Panel',
+const pageTitleKeys: Record<string, string> = {
+  '/election': 'pageTitles.dashboard',
+  '/news': 'pageTitles.contentFeed',
+  '/bookmarks': 'pageTitles.bookmarks',
+  '/narratives': 'pageTitles.narrativeTracking',
+  '/alerts': 'pageTitles.threatAlerts',
+  '/alert-rules': 'pageTitles.alertRules',
+  '/sources': 'pageTitles.sourceManagement',
+  '/topics': 'pageTitles.topicTracking',
+  '/reports': 'pageTitles.reports',
+  '/settings': 'pageTitles.settings',
+  '/guide': 'pageTitles.userGuide',
+  '/team': 'pageTitles.teamDiscussions',
+  '/team/settings': 'pageTitles.teamSettings',
+  '/admin': 'pageTitles.adminPanel',
 }
 
 const roleColors: Record<UserRole, string> = {
@@ -81,20 +83,20 @@ const roleColors: Record<UserRole, string> = {
   VIEWER: 'bg-gray-500',
 }
 
-const roleLabels: Record<UserRole, string> = {
-  SUPER_ADMIN: 'Super Admin',
-  ORG_ADMIN: 'Admin',
-  ANALYST: 'Analyst',
-  VIEWER: 'Viewer',
+const roleLabelKeys: Record<UserRole, string> = {
+  SUPER_ADMIN: 'roles.superAdmin',
+  ORG_ADMIN: 'roles.orgAdmin',
+  ANALYST: 'roles.analyst',
+  VIEWER: 'roles.viewer',
 }
 
-// Date range options
-const dateRanges = [
-  { label: 'Last 24 hours', value: '24h' },
-  { label: 'Last 7 days', value: '7d' },
-  { label: 'Last 30 days', value: '30d' },
-  { label: 'Last 90 days', value: '90d' },
-  { label: 'All time', value: 'all' },
+// Date range options with translation keys
+const dateRangeItems = [
+  { labelKey: 'dateRanges.last24Hours', value: '24h' },
+  { labelKey: 'dateRanges.last7Days', value: '7d' },
+  { labelKey: 'dateRanges.last30Days', value: '30d' },
+  { labelKey: 'dateRanges.last90Days', value: '90d' },
+  { labelKey: 'dateRanges.allTime', value: 'all' },
 ]
 
 // Format date in Armenia timezone (UTC+4)
@@ -118,11 +120,12 @@ function formatArmeniaDate(short = false): string {
 export default function Layout() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { t } = useTranslation()
   const logout = useAuthStore((state) => state.logout)
   const user = useAuthStore((state) => state.user)
   const organization = useAuthStore((state) => state.organization)
   const hasAnyRole = useAuthStore((state) => state.hasAnyRole)
-  const [dateRange, setDateRange] = useState('7d')
+  const { dateRange, setDateRange } = useDateRangeStore()
   const [showDateDropdown, setShowDateDropdown] = useState(false)
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [sidebarExpanded, setSidebarExpanded] = useState(false)
@@ -177,8 +180,9 @@ export default function Layout() {
   const mainNavItems = visibleNavItems.filter(item => item.section === 'main')
   const adminNavItems = visibleNavItems.filter(item => item.section === 'admin')
 
-  const currentPageTitle = pageTitles[location.pathname] || 'AIIM'
-  const selectedDateRange = dateRanges.find(r => r.value === dateRange)
+  const currentPageTitleKey = pageTitleKeys[location.pathname]
+  const currentPageTitle = currentPageTitleKey ? t(currentPageTitleKey) : 'AIIM'
+  const selectedDateRange = dateRangeItems.find(r => r.value === dateRange)
 
   // Update document title when page changes
   useEffect(() => {
@@ -258,16 +262,17 @@ export default function Layout() {
           {/* Main section */}
           <div className="mb-6">
             <p className={`px-3 mb-2 text-[10px] font-semibold uppercase tracking-wider text-sidebar-text/60 whitespace-nowrap transition-opacity duration-200 ${sidebarExpanded ? 'opacity-100' : 'opacity-0 lg:opacity-0'}`}>
-              Analysis
+              {t('nav.analysis')}
             </p>
             <ul className="space-y-1">
               {mainNavItems.map((item) => {
                 const isActive = location.pathname === item.path
+                const label = t(item.labelKey)
                 return (
                   <li key={item.path}>
                     <Link
                       to={item.path}
-                      title={!sidebarExpanded ? item.label : undefined}
+                      title={!sidebarExpanded ? label : undefined}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                         isActive
                           ? 'bg-sidebar-active text-white'
@@ -275,7 +280,7 @@ export default function Layout() {
                       } ${!sidebarExpanded ? 'lg:justify-center' : ''}`}
                     >
                       <span className={`flex-shrink-0 ${isActive ? 'text-amber-400' : ''}`}>{item.icon}</span>
-                      <span className={`${sidebarExpanded ? 'block' : 'hidden lg:hidden'}`}>{item.label}</span>
+                      <span className={`${sidebarExpanded ? 'block' : 'hidden lg:hidden'}`}>{label}</span>
                     </Link>
                   </li>
                 )
@@ -287,16 +292,17 @@ export default function Layout() {
           {adminNavItems.length > 0 && (
             <div>
               <p className={`px-3 mb-2 text-[10px] font-semibold uppercase tracking-wider text-sidebar-text/60 whitespace-nowrap transition-opacity duration-200 ${sidebarExpanded ? 'opacity-100' : 'opacity-0 lg:opacity-0'}`}>
-                Management
+                {t('nav.management')}
               </p>
               <ul className="space-y-1">
                 {adminNavItems.map((item) => {
                   const isActive = location.pathname === item.path
+                  const label = t(item.labelKey)
                   return (
                     <li key={item.path}>
                       <Link
                         to={item.path}
-                        title={!sidebarExpanded ? item.label : undefined}
+                        title={!sidebarExpanded ? label : undefined}
                         className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                           isActive
                             ? 'bg-sidebar-active text-white'
@@ -304,7 +310,7 @@ export default function Layout() {
                         } ${!sidebarExpanded ? 'lg:justify-center' : ''}`}
                       >
                         <span className={`flex-shrink-0 ${isActive ? 'text-amber-400' : ''}`}>{item.icon}</span>
-                        <span className={`${sidebarExpanded ? 'block' : 'hidden lg:hidden'}`}>{item.label}</span>
+                        <span className={`${sidebarExpanded ? 'block' : 'hidden lg:hidden'}`}>{label}</span>
                       </Link>
                     </li>
                   )
@@ -327,7 +333,7 @@ export default function Layout() {
                 <p className="text-sm font-medium text-white truncate">{user?.email}</p>
                 {user?.role && (
                   <span className={`text-[10px] px-1.5 py-0.5 rounded text-white ${roleColors[user.role]}`}>
-                    {roleLabels[user.role]}
+                    {t(roleLabelKeys[user.role])}
                   </span>
                 )}
               </div>
@@ -336,14 +342,14 @@ export default function Layout() {
               <Link
                 to="/settings"
                 className="p-2 text-sidebar-text hover:text-white hover:bg-sidebar-hover rounded-lg transition-colors"
-                title="Settings"
+                title={t('nav.settings')}
               >
                 <Settings size={18} />
               </Link>
               <button
                 onClick={logout}
                 className="p-2 text-sidebar-text hover:text-white hover:bg-sidebar-hover rounded-lg transition-colors"
-                title="Logout"
+                title={t('nav.logout')}
               >
                 <LogOut size={18} />
               </button>
@@ -357,19 +363,7 @@ export default function Layout() {
             v1.0.0-beta
           </p>
           {/* Language Toggle */}
-          <div className="flex justify-center gap-1">
-            <button
-              className="px-2 py-1 text-xs font-medium rounded bg-blue-600 text-white"
-            >
-              EN
-            </button>
-            <button
-              onClick={() => toast('Armenian interface — coming soon in v1.1', { icon: '🇦🇲' })}
-              className="px-2 py-1 text-xs font-medium rounded bg-sidebar-hover text-sidebar-text/60 hover:text-sidebar-text hover:bg-sidebar-active transition-colors"
-            >
-              ՀՅ
-            </button>
-          </div>
+          <LanguageToggle />
         </div>
       </aside>
 
@@ -414,7 +408,7 @@ export default function Layout() {
               <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-gray-50 dark:bg-slate-700 rounded-lg">
                 <span className={`w-2 h-2 rounded-full ${systemStatus === 'operational' ? 'bg-green-500' : 'bg-yellow-500'} animate-pulse`} />
                 <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
-                  {systemStatus === 'operational' ? 'All systems operational' : 'Partial degradation'}
+                  {systemStatus === 'operational' ? t('systemStatus.operational') : t('systemStatus.degraded')}
                 </span>
               </div>
 
@@ -427,7 +421,7 @@ export default function Layout() {
               <button
                 onClick={() => setTheme(isDark ? 'light' : 'dark')}
                 className="p-2 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors"
-                title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+                title={isDark ? t('theme.switchToLight') : t('theme.switchToDark')}
               >
                 {isDark ? <Sun size={18} /> : <Moon size={18} />}
               </button>
@@ -439,7 +433,7 @@ export default function Layout() {
                   className="flex items-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 bg-gray-50 dark:bg-slate-700 border border-gray-200 dark:border-slate-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-slate-600 transition-colors"
                 >
                   <Calendar size={16} />
-                  <span className="hidden sm:inline">{selectedDateRange?.label}</span>
+                  <span className="hidden sm:inline">{selectedDateRange ? t(selectedDateRange.labelKey) : ''}</span>
                   <span className="sm:hidden">{dateRange}</span>
                   <ChevronDown size={16} className={`transition-transform ${showDateDropdown ? 'rotate-180' : ''}`} />
                 </button>
@@ -451,11 +445,11 @@ export default function Layout() {
                       onClick={() => setShowDateDropdown(false)}
                     />
                     <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-gray-200 dark:border-slate-700 py-1 z-20 animate-fade-in">
-                      {dateRanges.map((range) => (
+                      {dateRangeItems.map((range) => (
                         <button
                           key={range.value}
                           onClick={() => {
-                            setDateRange(range.value)
+                            setDateRange(range.value as DateRangeValue)
                             setShowDateDropdown(false)
                           }}
                           className={`w-full text-left px-4 py-2 text-sm transition-colors ${
@@ -464,7 +458,7 @@ export default function Layout() {
                               : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-slate-700'
                           }`}
                         >
-                          {range.label}
+                          {t(range.labelKey)}
                         </button>
                       ))}
                     </div>
@@ -492,6 +486,37 @@ export default function Layout() {
         isOpen={showShortcutsHelp}
         onClose={() => setShowShortcutsHelp(false)}
       />
+    </div>
+  )
+}
+
+// Language Toggle Component
+function LanguageToggle() {
+  const { language, setLanguage } = useLanguageStore()
+  const { t } = useTranslation()
+
+  return (
+    <div className="flex justify-center gap-1">
+      <button
+        onClick={() => setLanguage('en')}
+        className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
+          language === 'en'
+            ? 'bg-blue-600 text-white'
+            : 'bg-sidebar-hover text-sidebar-text/60 hover:text-sidebar-text hover:bg-sidebar-active'
+        }`}
+      >
+        {t('languageSwitch.en')}
+      </button>
+      <button
+        onClick={() => setLanguage('hy')}
+        className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
+          language === 'hy'
+            ? 'bg-blue-600 text-white'
+            : 'bg-sidebar-hover text-sidebar-text/60 hover:text-sidebar-text hover:bg-sidebar-active'
+        }`}
+      >
+        {t('languageSwitch.hy')}
+      </button>
     </div>
   )
 }

@@ -26,6 +26,7 @@ import {
   HelpCircle,
   Lightbulb,
   ArrowRight,
+  Languages,
 } from 'lucide-react'
 import { useOnboardingTour } from '../components/OnboardingTour'
 
@@ -690,6 +691,86 @@ export default function UserGuidePage() {
 
           <TipBox type="info">
             See the full API documentation in Swagger for all available endpoints, request/response schemas, and try-it-out functionality.
+          </TipBox>
+        </div>
+      ),
+    },
+    {
+      id: 'language',
+      title: 'Language Settings',
+      icon: <Languages size={18} />,
+      content: (
+        <div className="space-y-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">Language Settings</h2>
+            <p className="text-gray-600 mb-4">
+              AIIM supports multiple interface languages to provide a localized experience
+              for users from different regions. Switch between languages at any time using
+              the language toggle in the header.
+            </p>
+          </div>
+
+          <h3 className="text-lg font-semibold text-gray-900">Supported Languages</h3>
+
+          <div className="grid md:grid-cols-2 gap-4 mb-6">
+            <div className="card p-4">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-2xl">🇺🇸</span>
+                <div>
+                  <h4 className="font-semibold">English</h4>
+                  <p className="text-sm text-gray-500">Default language</p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600">
+                Full interface support with all features and documentation in English.
+              </p>
+            </div>
+            <div className="card p-4">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-2xl">🇦🇲</span>
+                <div>
+                  <h4 className="font-semibold">Armenian</h4>
+                  <p className="text-sm text-gray-500">Fully supported</p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-600">
+                Complete Armenian localization for the entire interface.
+              </p>
+            </div>
+          </div>
+
+          <h3 className="text-lg font-semibold text-gray-900">How to Change Language</h3>
+
+          <div className="space-y-3">
+            <StepCard
+              number={1}
+              title="Locate the Language Toggle"
+              description="Find the language switcher button in the header, next to the theme toggle."
+              icon={<Globe size={16} />}
+            />
+            <StepCard
+              number={2}
+              title="Click to Switch"
+              description="Click the button to toggle between English (EN) and Armenian (ՀԱ)."
+              icon={<Languages size={16} />}
+            />
+            <StepCard
+              number={3}
+              title="Automatic Persistence"
+              description="Your language preference is saved automatically and will be remembered on future visits."
+              icon={<Settings size={16} />}
+            />
+          </div>
+
+          <TipBox type="info">
+            <strong>Note:</strong> Changing the interface language does not affect the language
+            of news articles. Article content remains in its original language (Armenian, Russian,
+            or English) regardless of interface settings.
+          </TipBox>
+
+          <TipBox>
+            Your language preference is stored locally in your browser. If you use multiple
+            browsers or devices, you'll need to set your preferred language on each one.
           </TipBox>
         </div>
       ),

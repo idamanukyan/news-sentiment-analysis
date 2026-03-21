@@ -1,9 +1,11 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
+import { useTranslation } from 'react-i18next'
 import { narrativesApi, coordinationEventsApi } from '../services/api'
 import { useAuthStore } from '../contexts/authStore'
-import { formatDistanceToNow } from 'date-fns'
+import { useDateRangeStore } from '../contexts/dateRangeStore'
+import { formatDistanceToNow, format } from 'date-fns'
 import ShareNarrativeModal from '../components/ShareNarrativeModal'
 import type { SharedUser } from '../types'
 import {
@@ -232,9 +234,11 @@ function formatRelativeTime(dateString: string): string {
 }
 
 export default function NarrativesPage() {
+  useTranslation() // Initialize for future use
   const canEditNarratives = useAuthStore((state) => state.canEditNarratives)
   const canEdit = canEditNarratives()
   const queryClient = useQueryClient()
+  const { dateRange, getDateRange } = useDateRangeStore()
 
   const [selectedNarrative, setSelectedNarrative] = useState<Narrative | null>(null)
   const [pendingDetailNarrative, setPendingDetailNarrative] = useState<Narrative | null>(null)
@@ -246,11 +250,19 @@ export default function NarrativesPage() {
   const [viewMode, setViewMode] = useState<'active' | 'pending'>('active')
   const [editedTitles, setEditedTitles] = useState<Record<number, string>>({})
 
+  // Get date range for filtering
+  const { from: fromDate, to: toDate } = getDateRange()
+
   // Query for active narratives (default view)
   const { data: narrativesData, isLoading } = useQuery({
-    queryKey: ['narratives', ownershipFilter],
+    queryKey: ['narratives', ownershipFilter, dateRange],
     queryFn: async () => {
-      const res = await narrativesApi.getAll({ filter: ownershipFilter })
+      const params: { filter: 'all' | 'mine' | 'shared'; fromDate?: string; toDate?: string } = {
+        filter: ownershipFilter
+      }
+      if (fromDate) params.fromDate = format(fromDate, 'yyyy-MM-dd')
+      if (toDate) params.toDate = format(toDate, 'yyyy-MM-dd')
+      const res = await narrativesApi.getAll(params)
       return res.data
     },
     enabled: viewMode === 'active',
