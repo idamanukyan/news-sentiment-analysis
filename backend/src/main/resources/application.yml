@@ -115,12 +115,6 @@ app:
       batch-size: ${RELEVANCE_BATCH_SIZE:20}
       max-per-run: ${RELEVANCE_MAX_PER_RUN:200}
 
-  langfuse:
-    enabled: ${LANGFUSE_ENABLED:true}
-    public-key: ${LANGFUSE_PUBLIC_KEY:}
-    secret-key: ${LANGFUSE_SECRET_KEY:}
-    host: ${LANGFUSE_HOST:https://cloud.langfuse.com}
-
 # Actuator & Monitoring
 management:
   endpoints:
