@@ -1,0 +1,210 @@
+{
+  "narratives": {
+    "stats": {
+      "totalNarratives": "Ընդհանուր պատմություններ",
+      "active": "Ակտիվ",
+      "highThreat": "Բարձր սպառնալիք",
+      "totalArticles": "Ընդհանուր հոդվածներ"
+    },
+    "viewModes": {
+      "activeNarratives": "Ակտիվ պատմություններ",
+      "pendingReview": "Սպասող վերանայման"
+    },
+    "ownershipFilters": {
+      "allNarratives": "Բոլոր պատմությունները",
+      "myNarratives": "Իմ պատմությունները",
+      "sharedWithMe": "Ինձ հետ կիսված"
+    },
+    "filters": {
+      "all": "Բոլորը",
+      "active": "Ակտիվ",
+      "highThreat": "Բարձր սպառնալիք"
+    },
+    "actions": {
+      "addNarrative": "Ավելացնել պատմություն",
+      "clearFilters": "Մաքրել ֆիլտրերը",
+      "reviewNow": "Վերանայել հիմա",
+      "viewActiveNarratives": "Դիտել ակտիվ պատմությունները",
+      "createFirstNarrative": "Ստեղծել առաջին պատմությունը",
+      "share": "Կիսվել",
+      "approve": "Հաստատել",
+      "dismiss": "Հեռացնել",
+      "approving": "Հաստատվում է...",
+      "dismissing": "Հեռացնելիս..."
+    },
+    "pendingBanner": {
+      "title": "AI-ի առաջարկած պատմություն՝ սպասում է վերանայման",
+      "titlePlural": "AI-ի առաջարկած պատմություններ՝ սպասում են վերանայման",
+      "description": "Վերանայեք և հաստատեք կամ մերժեք ավտոմատ հայտնաբերված պատմությունները"
+    },
+    "badges": {
+      "aiSuggested": "AI Suggested",
+      "owner": "Owner",
+      "sharedWithYou": "Shared with you",
+      "shared": "Shared",
+      "factChecked": "Փաստերով ստուգված",
+      "պատրաստվում է վերանայման": "Պատրաստվում է վերանայման"
+    },
+    "սպառնալիքի մակարդակներ": {
+      "կրիտիկական": "ԿՐԻՏԻԿԱԿԱՆ",
+      "բարձր": "ԲԱՐՁՐ",
+      "միջին": "ՄԻՋԻՆ",
+      "ցածր": "ՑԱԾՐ"
+    },
+    "statuses": {
+      "active": "ACTIVE",
+      "monitoring": "MONITORING",
+      "resolved": "RESOLVED",
+      "archived": "ARCHIVED"
+    },
+    "threatSignals": {
+      "none": "Վտանգ չկա",
+      "low": "Ցածր",
+      "medium": "Միջին",
+      "high": "Բարձր"
+    },
+    "card": {
+      "articles": "articles",
+      "firstDetected": "Առաջին հայտնաբերում"
+    },
+    "aiAnalysis": {
+      "title": "AI վերլուծություն",
+      "unavailable": "AI վերլուծությունը հասանելի չէ",
+      "whyDetected": "Ինչու է հայտնաբերվել:",
+      "spread": "Տարածում:",
+      "analystNote": "Վերլուծաբանի նշում"
+    },
+    "emptyStates": {
+      "allCaughtUp": "Ամեն ինչ ավարտված է!",
+      "noPendingNarratives": "AI-ի առաջարկած պատմություններ դեռևս չկան։ Նոր պատմությունները կհայտնվեն այստեղ դրանց հայտնաբերման դեպքում։",
+      "noMatchingNarratives": "Համապատասխան պատմություններ չկան",
+      "tryAdjustingFilters": "Փորձեք հարմարեցնել ձեր ֆիլտրերը՝ ավելի շատ արդյունքներ տեսնելու համար",
+      "noNarrativesYet": "Դեռ պատմություններ չկան",
+      "narrativesDescription": "Պատմությունները օգնում են հետևել ապատեղեկատվական արշավներին՝ վերահսկելով բանալի բառերի օրինաչափությունները լրատվական աղբյուրներում։ Ստեղծեք ձեր առաջին պատմությունը մոնիտորինգ սկսելու համար։"
+    },
+    "pending": {
+      "awaitingReview": "AI-ի առաջարկած նկարագրությունները սպասում են ձեր վերանայմանը",
+      "dismissConfirm": "Հաստատե՞լ այս AI-ի առաջարկած նկարագրությունը մերժելը?",
+      "approvedSuccess": "Պատմությունը հաստատվել և ավելացվել է հոսքին",
+      "failedApprove": "Չհաջողվեց հաստատել պատմությունը",
+      "dismissedSuccess": "Պատմությունը մերժվել է",
+      "failedDismiss": "Չհաջողվեց ջնջել պատմությունը"
+    },
+    "detail": {
+      "firstDetected": "Առաջին հայտնաբերում",
+      "lastActivity": "Վերջին ակտիվություն",
+      "totalItems": "Ընդհանուր տարրեր",
+      "sources": "Աղբյուրներ",
+      "keywords": "Բանալի բառեր",
+      "sentimentDistribution": "Հուզական տրամադրությունների բաշխում",
+      "tab-եր": {
+        "timeline": "Ժամանակագրություն",
+        "sources": "Աղբյուրներ",
+        "coordination": "Կոորդինացիա",
+        "factChecks": "Փաստերի ստուգումներ"
+      },
+      "unknownSource": "Անհայտ աղբյուր",
+      "noArticlesYet": "Դեռ հոդվածներ չկան",
+      "noArticlesDescription": "Նարատիվ բանալի բառերին համապատասխանող հոդվածները կհայտնվեն այստեղ, երբ աղբյուրները քերծվեն",
+      "noSourceData": "Աղբյուրի տվյալներ չկան",
+      "noSourceDataDescription": "Աղբյուրների մանրամասները կհայտնվեն հոդվածների հավաքագրումից հետո",
+      "article": "հոդված",
+      "articlePlural": "հոդվածներ",
+      "mixed": "խառը"
+    },
+
+    "coordination": {
+      "noCoordinationDetected": "Համակարգում չի հայտնաբերվել",
+      "noCoordinationDescription": "Համակարգված գործունեության հայտնաբերումը կատարվում է յուրաքանչյուր 2 ժամը մեկ։ Միջադեպերը կհայտնվեն այստեղ, եթե մի քանի աղբյուրներ կարճ ժամանակահատվածում հրապարակեն նմանատիպ բովանդակություն։",
+      "types": {
+        "timing": "Ժամանակի վրա հիմնված",
+        "content": "Բովանդակային նմանություն",
+        "timingAndContent": "Ժամանակ + Բովանդակություն"
+      },
+      "statuses": {
+        "active": "Ակտիվ",
+        "reviewed": "Վերանայված",
+        "dismissed": "Մերժված"
+      },
+      "sources": "sources",
+      "articles": "articles",
+      "window": "window",
+      "similarity": "similarity",
+      "sourcesInvolved": "Մասնակից աղբյուրներ",
+      "ավելին": "ավելին",
+      "reviewedBy": "քննարկվել է"
+    },
+    "factChecks": {
+      "linkFactCheck": "Հղում փաստերի ստուգմանը",
+      "noFactChecksYet": "Դեռևս փաստերի ստուգումներ չեն հղվել",
+      "noFactChecksDescription": "Հղեք CivilNet-ի կամ այլ աղբյուրների հրապարակած փաստերի ստուգումները՝ համատեքստ տրամադրելու և այս պատմությունը հերքելու համար։"
+      "verdicts": {
+        "false": "FALSE",
+        "misleading": "MISLEADING",
+        "partlyTrue": "PARTLY TRUE",
+        "true": "TRUE",
+        "unverified": "UNVERIFIED"
+      },
+      "published": "Հրապարակվել է:",
+      "addedBy": "Ավելացվել է",
+      "removeFactCheck": "Հեռացնել փաստերի ստուգումը",
+      "factCheckRemoved": "Փաստերի ստուգումը հեռացվել է",
+      "factCheckLinked": "Փաստերի ստուգումը հաջողությամբ կապվել է"
+    },
+    "addFactCheckModal": {
+      "title": "Փաստերի ստուգման հղում",
+      "urlLabel": "URL",
+      "urlPlaceholder": "https://civilnet.am/fact-check/...",
+      "titleLabel": "Title",
+      "titlePlaceholder": "Փաստերի ստուգման հոդվածի վերնագիր",
+      "publisherLabel": "Publisher",
+      "verdictLabel": "Verdict",
+      "notesLabel": "Notes (optional)",
+      "notesPlaceholder": "Լրացուցիչ համատեքստ կամ ամփոփում...",
+      "cancel": "Չեղարկել",
+      "submit": "Ստուգել հղումը",
+      "adding": "Ավելացնելիս...",
+      "urlRequired": "URL-ը պարտադիր է",
+      "titleRequired": "Առաջնագիրը պարտադիր է"
+    },
+    "createModal": {
+      "title": "Նոր պատմություն ստեղծել",
+      "nameLabel": "Պատմության անվանում",
+      "namePlaceholder": "օրինակ՝ ԵՄ-ի դեմ տրամադրությունների արշավ",
+      "descriptionLabel": "Նկարագրություն",
+      "descriptionPlaceholder": "Այս պատմության կարճ նկարագրություն...",
+      "keywordsLabel": "Բանալի բառեր",
+      "keywordsHint": "ջութակներով բաժանված",
+      "keywordsPlaceholder": "օրինակ՝ Սորոս, ԵՄ միջամտություն, օտար գործակալներ",
+      "keywordsDescription": "Այս բանալի բառերը պարունակող հոդվածները կապվելու են այս պատմության հետ",
+      "threatLevelLabel": "Սկզբնական սպառնալիքի մակարդակ",
+      "cancel": "Չեղարկել",
+      "submit": "Ստեղծել պատմություն",
+      "creating": "Ստեղծվում է...",
+      "nameRequired": "Անունը պարտադիր է",
+      "keywordsRequired": "Պահանջվում է առնվազն մեկ բանալի բառ",
+      "createdSuccess": "Նարատիվը հաջողությամբ ստեղծվել է"
+    },
+    "pendingDetailModal": {
+      "narrativeTitle": "Ներածական վերնագիր",
+      "titlePlaceholder": "Ներածական վերնագիր...",
+      "aiAnalysis": "AI վերլուծություն",
+      "whyDetected": "Ինչու հայտնաբերվեց",
+      "spreadPattern": "Տարածման օրինակ",
+      "analystNote": "Վերլուծաբանի նշում",
+      "notAvailable": "Չի հասանելի",
+      "keywords": "Բանալի բառեր",
+      "noKeywords": "Բառեր չկան",
+      "հոդվածներ": "Հոդվածներ",
+      "առաջին հայտնաբերում": "Առաջին հայտնաբերում",
+      "վերջին անգամ տեսվել է": "Վերջին անգամ տեսվել է",
+      "նմուշային հոդվածներ": "Նմուշային հոդվածներ",
+      "բեռնում": "Բեռնում...",
+      "noArticlesFound": "Այս պատմության համար հոդվածներ չեն գտնվել",
+      "approveNarrative": "Հաստատել պատմությունը"
+    },
+    "share": {
+      "shareNarrative": "Կիսվել պատմությամբ"
+    }
+  }
+}

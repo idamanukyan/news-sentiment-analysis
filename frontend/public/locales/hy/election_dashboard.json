@@ -1,0 +1,82 @@
+{
+  "electionDashboard": {
+    "liveStatus": {
+      "liveUpdatesActive": "Ուղիղ թարմացումները ակտիվ են",
+      "live": "Ուղիղ",
+      "polling": "Հարցում (30 վայրկյան)",
+      "pollingShort": "Հարցում",
+      "connecting": "Միացում...",
+      "updated": "Թարմացված"
+    },
+    "actions": {
+      "generateReport": "Զեկույցի ստեղծում",
+      "report": "Զեկույց",
+      "refresh": "Թարմացնել"
+    },
+    "countdown": {
+      "electionDayCountdown": "Ընտրության օրվա հաշվարկ",
+      "parliamentaryElections2026": "2026 թվականի խորհրդարանական ընտրություններ",
+      "days": "օր",
+      "hrs": "ժամ",
+      "min": "րոպե"
+    },
+    "statCards": {
+      "sourcesMonitored": "Հետևվող աղբյուրներ",
+      "newsTelegram": "Լուրեր + Տելեգրամ",
+      "newsArticles": "Լուրեր",
+      "newToday": "այսօր նոր",
+      "telegramPosts": "Տելեգրամի գրառումներ",
+      "fromChannels": "Ալիքներից",
+      "activeNarratives": "Ակտիվ պատմություններ",
+      "highThreat": "բարձր սպառնալիք",
+      "monitoring": "Հսկողություն",
+      "activeAlerts": "Ակտիվ ծանուցումներ",
+      "requiresAttention": "Ուշադրություն է պահանջվում"
+    },
+    "sections": {
+      "overallThreatLevel": "Ընդհանուր սպառնալիքի մակարդակ",
+      "narrativeActivity7Days": "Պատմողական գործունեություն(7 օր)",
+      "topNarratives": "Գլխավոր պատմություններ",
+      "viewAll": "Դիտել բոլորը",
+      "sentimentDistribution": "Զգացմունքների բաշխում",
+      "contentBySource": "Բովանդակություն ըստ աղբյուրի",
+      "recentAlerts": "Վերջին զգուշացումներ"
+    },
+    "narratives": {
+      "articles": "Հոդվածներ",
+      "noNarrativesYet": "Դեռևս որևէ պատմություն չի հետևվել",
+      "createNarrativesDesc": "Ստեղծեք պատմություններ՝ կեղծ տեղեկատվության նմուշները վերահսկելու համար",
+      "createNarrative": "Ստեղծել պատմություն"
+    },
+    "alerts": {
+      "allClear": "Ամեն ինչ կարգին է - վերջին զգուշացումներ չկան",
+      "alertsTriggeredDesc": "Զգուշացումները ավտոմատ կերպով ակտիվանում են, երբ պատմությունները ցուցադրում են անսովոր ակտիվություն կամ հասնում են վտանգի շեմերին",
+      "configureThresholds": "Կարգավորել պատմությունների շեմերը"
+    },
+    "table": {
+      "alert": "Զգուշացում",
+      "narrative": "Նարատիվ",
+      "severity": "Ծանրություն",
+      "status": "Վիճակ",
+      "time": "Ժամանակ",
+      "na": "Չկիրառելի"
+    },
+    "timeAgo": {
+      "justNow": "Հենց հիմա",
+      "hoursAgo": "ժամ առաջ",
+      "yesterday": "Երեկ",
+      "daysAgo": "օր առաջ"
+    },
+    "threatLevels": {
+      "low": "Ցածր",
+      "medium": "Միջին",
+      "high": "Բարձր",
+      "critical": "Կրիտիկական"
+    },
+    "alertStatus": {
+      "active": "Ակտիվ",
+      "acknowledged": "Հաստատված",
+      "resolved": "Լուծված"
+    }
+  }
+}
