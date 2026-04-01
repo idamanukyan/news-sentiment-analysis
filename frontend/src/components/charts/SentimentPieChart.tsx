@@ -37,13 +37,13 @@ export default function SentimentPieChart({ data }: SentimentPieChartProps) {
         <Pie
           data={chartData}
           cx="50%"
-          cy="50%"
-          innerRadius={60}
-          outerRadius={90}
+          cy="45%"
+          innerRadius={40}
+          outerRadius={65}
           paddingAngle={2}
           dataKey="value"
           label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-          labelLine={false}
+          labelLine={true}
         >
           {chartData.map((entry, index) => (
             <Cell key={`cell-${index}`} fill={entry.color} />
