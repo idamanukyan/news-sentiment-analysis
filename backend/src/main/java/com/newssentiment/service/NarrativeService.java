@@ -28,7 +28,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,6 +44,7 @@ public class NarrativeService {
     private final FactCheckRepository factCheckRepository;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
+    private final NarrativeRelevanceService narrativeRelevanceService;
 
     private Long getOrgId() {
         return OrganizationContext.getCurrentOrganizationIdOrNull();
@@ -272,16 +272,17 @@ public class NarrativeService {
     }
 
     /**
-     * Update article counts for all narratives based on keyword matches.
-     * Includes both ACTIVE and PENDING_REVIEW narratives so counts are
-     * accurate when analysts review pending narratives.
-     * Called periodically by scheduler.
+     * Update article counts for all narratives using the article_narratives junction
+     * table with the same relevance filter that the article view endpoint applies.
+     * This guarantees the count shown on a narrative card matches the number of
+     * articles a user actually sees when opening it. Includes both ACTIVE and
+     * PENDING_REVIEW narratives so counts are accurate when analysts review pending
+     * narratives. Called periodically by scheduler.
      */
     @Transactional
     public void updateNarrativeCounts() {
         log.info("Updating narrative article counts...");
-        // Use 30-day window to match the article view endpoint
-        Instant since = Instant.now().minus(30, ChronoUnit.DAYS);
+        Float relevanceThreshold = narrativeRelevanceService.getRelevanceThreshold();
 
         // Update both ACTIVE and PENDING_REVIEW narratives
         List<Narrative> activeNarratives = narrativeRepository.findByStatus(NarrativeStatus.ACTIVE);
@@ -291,27 +292,10 @@ public class NarrativeService {
         allNarratives.addAll(pendingNarratives);
 
         for (Narrative narrative : allNarratives) {
-            String[] keywords = narrative.getKeywords();
-            if (keywords == null || keywords.length == 0) {
-                continue;
-            }
-
-            // Expand multi-word keywords to match article view logic
-            // "Syunik concessions" becomes ["Syunik concessions", "Syunik", "concessions"]
-            List<String> expandedKeywords = new java.util.ArrayList<>();
-            for (String keyword : keywords) {
-                expandedKeywords.add(keyword);
-                if (keyword.contains(" ")) {
-                    for (String word : keyword.split("\\s+")) {
-                        if (word.length() >= 3 && !expandedKeywords.contains(word)) {
-                            expandedKeywords.add(word);
-                        }
-                    }
-                }
-            }
-
-            // Count articles matching keywords in the last 30 days
-            long count = articleRepository.countByKeywordsSince(expandedKeywords.toArray(new String[0]), since);
+            // Count articles linked via the junction table that pass the relevance
+            // threshold. This is the same query used by NarrativeController.getNarrativeArticles.
+            long count = articleRepository.countByNarrativeIdWithRelevanceThreshold(
+                    narrative.getId(), relevanceThreshold);
 
             int previousCount = narrative.getArticleCount() != null ? narrative.getArticleCount() : 0;
             narrative.setArticleCount((int) count);

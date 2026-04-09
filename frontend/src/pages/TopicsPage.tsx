@@ -124,8 +124,10 @@ export default function TopicsPage() {
       toast.success('Topic created successfully')
       closeModal()
     },
-    onError: () => {
-      toast.error('Failed to create topic')
+    onError: (error: unknown) => {
+      const apiMessage =
+        (error as { response?: { data?: { message?: string } } })?.response?.data?.message
+      toast.error(apiMessage ? `Failed to create topic: ${apiMessage}` : 'Failed to create topic')
     },
   })
 

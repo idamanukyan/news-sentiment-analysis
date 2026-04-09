@@ -10,7 +10,6 @@ import com.newssentiment.dto.SharedUserDTO;
 import com.newssentiment.model.Article;
 import com.newssentiment.model.Narrative.NarrativeStatus;
 import com.newssentiment.model.Narrative.ThreatLevel;
-import com.newssentiment.repository.ArticleNarrativeRepository;
 import com.newssentiment.repository.ArticleRepository;
 import com.newssentiment.service.NarrativeRelevanceService;
 import com.newssentiment.service.NarrativeService;
@@ -38,7 +37,6 @@ public class NarrativeController {
 
     private final NarrativeService narrativeService;
     private final ArticleRepository articleRepository;
-    private final ArticleNarrativeRepository articleNarrativeRepository;
     private final NarrativeRelevanceService narrativeRelevanceService;
 
     @GetMapping
@@ -184,56 +182,28 @@ public class NarrativeController {
             return ResponseEntity.notFound().build();
         }
 
-        NarrativeDTO narrative = narrativeOpt.get();
         Float relevanceThreshold = narrativeRelevanceService.getRelevanceThreshold();
 
-        // First try to use the junction table with relevance filtering
-        long junctionCount = articleNarrativeRepository.countByNarrativeIdAboveThreshold(id, relevanceThreshold);
+        // Articles are linked to narratives via the article_narratives junction table.
+        // The junction is populated by the scraper's LLM clustering and refined by
+        // NarrativeRelevanceService. We deliberately do NOT fall back to a raw keyword
+        // search: a narrative's keywords describe the topic in broad terms and a LIKE
+        // search returns many articles that do not actually belong to the narrative.
+        long junctionCount = articleRepository.countByNarrativeIdWithRelevanceThreshold(
+                id, relevanceThreshold);
 
-        if (junctionCount > 0) {
-            // Use junction table with relevance filtering
-            List<Article> articles = articleRepository.findByNarrativeIdWithRelevanceThreshold(
-                    id, relevanceThreshold, pageable);
-
-            List<ArticleDTO> dtos = articles.stream()
-                    .map(this::toArticleDTO)
-                    .toList();
-
-            return ResponseEntity.ok(new PageImpl<>(dtos, pageable, junctionCount));
-        }
-
-        // Fallback to keyword search if no junction table entries
-        List<String> keywords = narrative.keywords();
-        if (keywords == null || keywords.isEmpty()) {
+        if (junctionCount == 0) {
             return ResponseEntity.ok(Page.empty(pageable));
         }
 
-        // Expand multi-word keywords into individual words for better matching
-        // "Syunik concessions" becomes ["Syunik concessions", "Syunik", "concessions"]
-        List<String> expandedKeywords = new java.util.ArrayList<>();
-        for (String keyword : keywords) {
-            expandedKeywords.add(keyword); // Keep original phrase
-            if (keyword.contains(" ")) {
-                // Split into individual words (min 3 chars to avoid noise)
-                for (String word : keyword.split("\\s+")) {
-                    if (word.length() >= 3 && !expandedKeywords.contains(word)) {
-                        expandedKeywords.add(word);
-                    }
-                }
-            }
-        }
-
-        Instant since = Instant.now().minus(30, ChronoUnit.DAYS);
-        String[] keywordArray = expandedKeywords.toArray(new String[0]);
-
-        List<Article> articles = articleRepository.findByKeywordsSince(
-                keywordArray, since, pageable);
+        List<Article> articles = articleRepository.findByNarrativeIdWithRelevanceThreshold(
+                id, relevanceThreshold, pageable);
 
         List<ArticleDTO> dtos = articles.stream()
                 .map(this::toArticleDTO)
                 .toList();
 
-        return ResponseEntity.ok(new PageImpl<>(dtos, pageable, dtos.size()));
+        return ResponseEntity.ok(new PageImpl<>(dtos, pageable, junctionCount));
     }
 
     private ArticleDTO toArticleDTO(Article article) {
