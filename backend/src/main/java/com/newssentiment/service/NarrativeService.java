@@ -11,6 +11,7 @@ import com.newssentiment.model.Narrative.NarrativeStatus;
 import com.newssentiment.model.Narrative.ThreatLevel;
 import com.newssentiment.model.NarrativeShare;
 import com.newssentiment.model.User;
+import com.newssentiment.repository.ArticleNarrativeRepository;
 import com.newssentiment.repository.ArticleRepository;
 import com.newssentiment.repository.CoordinationEventRepository;
 import com.newssentiment.repository.FactCheckRepository;
@@ -40,11 +41,20 @@ public class NarrativeService {
     private final NarrativeShareRepository narrativeShareRepository;
     private final ThreatAlertRepository alertRepository;
     private final ArticleRepository articleRepository;
+    private final ArticleNarrativeRepository articleNarrativeRepository;
     private final CoordinationEventRepository coordinationEventRepository;
     private final FactCheckRepository factCheckRepository;
     private final UserRepository userRepository;
     private final ObjectMapper objectMapper;
     private final NarrativeRelevanceService narrativeRelevanceService;
+
+    /**
+     * Window used when populating article_narratives by keyword matching for
+     * user-created narratives. Articles outside this window are ignored, both
+     * for relevance and to keep the insert query bounded.
+     */
+    private static final java.time.temporal.ChronoUnit BACKFILL_UNIT = java.time.temporal.ChronoUnit.DAYS;
+    private static final long BACKFILL_DAYS = 90L;
 
     private Long getOrgId() {
         return OrganizationContext.getCurrentOrganizationIdOrNull();
@@ -172,7 +182,12 @@ public class NarrativeService {
                 .articleCount(0)
                 .build();
 
-        return toDTO(narrativeRepository.save(narrative));
+        Narrative saved = narrativeRepository.save(narrative);
+        // Populate article_narratives by keyword match. The scraper only links
+        // its own auto-clustered narratives, so user-created narratives would
+        // otherwise show 0 articles in the detail view.
+        populateArticleNarrativesByKeywords(saved);
+        return toDTO(saved);
     }
 
     @Transactional
@@ -202,6 +217,7 @@ public class NarrativeService {
                                           java.util.List<String> keywords, String threatLevel) {
         return narrativeRepository.findByIdAndOrganizationId(id, getOrgId())
                 .map(narrative -> {
+                    boolean keywordsChanged = false;
                     if (name != null && !name.trim().isEmpty()) {
                         narrative.setName(name.trim());
                     }
@@ -210,12 +226,19 @@ public class NarrativeService {
                     }
                     if (keywords != null && !keywords.isEmpty()) {
                         narrative.setKeywords(keywords.toArray(new String[0]));
+                        keywordsChanged = true;
                     }
                     if (threatLevel != null && !threatLevel.trim().isEmpty()) {
                         narrative.setThreatLevel(ThreatLevel.valueOf(threatLevel.toUpperCase()));
                     }
                     log.info("Narrative '{}' (id={}) updated", narrative.getName(), id);
-                    return toDTO(narrativeRepository.save(narrative));
+                    Narrative saved = narrativeRepository.save(narrative);
+                    if (keywordsChanged) {
+                        // Refresh junction so newly matching articles surface
+                        // immediately. Existing pairs are preserved by ON CONFLICT.
+                        populateArticleNarrativesByKeywords(saved);
+                    }
+                    return toDTO(saved);
                 });
     }
 
@@ -334,6 +357,33 @@ public class NarrativeService {
     private boolean matchesKeywords(String text, String[] keywords) {
         if (keywords == null || keywords.length == 0) return false;
         return java.util.Arrays.stream(keywords).anyMatch(keyword -> text.contains(keyword.toLowerCase()));
+    }
+
+    /**
+     * Populate the article_narratives junction for a narrative by matching its
+     * keywords against article titles and content within the backfill window.
+     *
+     * Inserts pairs with relevance_score=NULL so NarrativeRelevanceService can
+     * later refine them via Claude. Idempotent (ON CONFLICT DO NOTHING).
+     * Used by create()/update() so user-created narratives get articles
+     * immediately, since the scraper only links its own auto-clustered narratives.
+     */
+    private void populateArticleNarrativesByKeywords(Narrative narrative) {
+        String[] keywords = narrative.getKeywords();
+        if (keywords == null || keywords.length == 0) {
+            return;
+        }
+        try {
+            Instant since = Instant.now().minus(BACKFILL_DAYS, BACKFILL_UNIT);
+            int inserted = articleNarrativeRepository.linkArticlesToNarrativeByKeywords(
+                    narrative.getId(), keywords, since);
+            log.info("Linked {} articles to narrative '{}' (id={}) by keyword match",
+                    inserted, narrative.getName(), narrative.getId());
+        } catch (Exception e) {
+            // Don't fail the create/update if backfill fails — log and move on.
+            log.error("Failed to populate article_narratives for narrative {} (id={}): {}",
+                    narrative.getName(), narrative.getId(), e.getMessage(), e);
+        }
     }
 
     // ==================== Sharing Methods ====================

@@ -87,4 +87,27 @@ public interface ArticleNarrativeRepository extends JpaRepository<ArticleNarrati
     long countByNarrativeIdAboveThreshold(
             @Param("narrativeId") Long narrativeId,
             @Param("threshold") Float threshold);
+
+    /**
+     * Link articles to a narrative by keyword matching.
+     *
+     * Used for user-created narratives (the scraper only links its own
+     * auto-clustered narratives). Inserts pairs with relevance_score=NULL so
+     * NarrativeRelevanceService can refine them via Claude on its next run.
+     * Searches both original and English text. Idempotent via ON CONFLICT.
+     */
+    @Modifying
+    @Query(value = "INSERT INTO article_narratives (article_id, narrative_id, confidence, detected_at, relevance_score) " +
+           "SELECT a.id, :narrativeId, 0.7, NOW(), NULL FROM articles a " +
+           "WHERE a.published_at >= :since " +
+           "AND (LOWER(a.title) LIKE ANY(ARRAY(SELECT '%' || LOWER(k) || '%' FROM UNNEST(CAST(:keywords AS TEXT[])) k)) " +
+           "  OR LOWER(a.content) LIKE ANY(ARRAY(SELECT '%' || LOWER(k) || '%' FROM UNNEST(CAST(:keywords AS TEXT[])) k)) " +
+           "  OR LOWER(COALESCE(a.title_en, '')) LIKE ANY(ARRAY(SELECT '%' || LOWER(k) || '%' FROM UNNEST(CAST(:keywords AS TEXT[])) k)) " +
+           "  OR LOWER(COALESCE(a.content_en, '')) LIKE ANY(ARRAY(SELECT '%' || LOWER(k) || '%' FROM UNNEST(CAST(:keywords AS TEXT[])) k))) " +
+           "ON CONFLICT (article_id, narrative_id) DO NOTHING",
+           nativeQuery = true)
+    int linkArticlesToNarrativeByKeywords(
+            @Param("narrativeId") Long narrativeId,
+            @Param("keywords") String[] keywords,
+            @Param("since") java.time.Instant since);
 }
