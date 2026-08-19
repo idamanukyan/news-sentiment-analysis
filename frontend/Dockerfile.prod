@@ -17,7 +17,7 @@ COPY . .
 
 # Build arguments for environment
 ARG VITE_API_URL=/api
-ARG VITE_APP_TITLE="AIIM - Armenia Information Integrity Monitor"
+ARG VITE_APP_TITLE="AIIM - AI Information Integrity Monitor"
 
 ENV VITE_API_URL=$VITE_API_URL
 ENV VITE_APP_TITLE=$VITE_APP_TITLE

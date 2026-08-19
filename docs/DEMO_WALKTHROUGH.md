@@ -20,7 +20,7 @@
 
 **Open login page**
 
-> "Welcome to AIIM - the Armenia Information Integrity Monitor. This platform was built to help election observers, journalists, and civil society track disinformation narratives in real-time across Armenian media."
+> "Welcome to AIIM - the AI Information Integrity Monitor. This platform was built to help election observers, journalists, and civil society track disinformation narratives in real-time across Armenian media."
 
 **Key talking points:**
 - Monitors 74+ sources across Armenian, Russian, and English media

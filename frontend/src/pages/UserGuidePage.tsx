@@ -144,7 +144,7 @@ export default function UserGuidePage() {
           <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Welcome to AIIM</h2>
             <p className="text-gray-600 leading-relaxed mb-4">
-              The <strong>Armenia Information Integrity Monitor (AIIM)</strong> is a comprehensive platform
+              The <strong>AI Information Integrity Monitor (AIIM)</strong> is a comprehensive platform
               designed to monitor, analyze, and respond to information threats during critical events
               such as elections. AIIM provides real-time insights into media narratives, detects
               coordinated disinformation campaigns, and helps analysts maintain information integrity.

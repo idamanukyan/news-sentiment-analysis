@@ -55,7 +55,7 @@ export default function LoginPage() {
             AIIM
           </h2>
           <p className="text-sm text-blue-600 font-medium">
-            Armenia Information Integrity Monitor
+            AI Information Integrity Monitor
           </p>
           <p className="mt-4 text-sm text-gray-600">
             Sign in to access the monitoring dashboard

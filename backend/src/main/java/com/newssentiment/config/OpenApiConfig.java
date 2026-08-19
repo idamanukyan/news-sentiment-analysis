@@ -24,9 +24,9 @@ public class OpenApiConfig {
     public OpenAPI aiimOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("AIIM - Armenia Information Integrity Monitor API")
+                        .title("AIIM - AI Information Integrity Monitor API")
                         .description("""
-                                REST API for the Armenia Information Integrity Monitor platform.
+                                REST API for the AI Information Integrity Monitor platform.
 
                                 ## Overview
                                 AIIM is an election monitoring and disinformation detection platform that:

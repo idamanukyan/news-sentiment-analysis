@@ -466,7 +466,7 @@ export default function SettingsPage() {
       {/* Version Info */}
       <div className="text-center text-sm text-gray-500 dark:text-gray-400 py-4">
         <p>AIIM v1.0.0-beta</p>
-        <p className="text-xs mt-1">Armenia Information Integrity Monitor</p>
+        <p className="text-xs mt-1">AI Information Integrity Monitor</p>
       </div>
     </div>
   )

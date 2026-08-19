@@ -1184,7 +1184,7 @@ What questions do you have?"
 
 ```
 Slide 1: Title
-- AIIM: Armenia Information Integrity Monitor
+- AIIM: AI Information Integrity Monitor
 - "Protecting Armenia's Information Space"
 - Subtitle: Election Integrity Infrastructure for 2026
 

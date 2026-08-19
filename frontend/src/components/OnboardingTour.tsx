@@ -29,7 +29,7 @@ const TOUR_STEPS: TourStep[] = [
   {
     id: 'welcome',
     title: 'Welcome to AIIM',
-    description: 'Armenia Information Integrity Monitor helps you track narratives, detect disinformation, and monitor media coverage during critical events like elections.',
+    description: 'AI Information Integrity Monitor helps you track narratives, detect disinformation, and monitor media coverage during critical events like elections.',
     icon: <Shield size={32} className="text-amber-500" />,
     position: 'center',
   },
