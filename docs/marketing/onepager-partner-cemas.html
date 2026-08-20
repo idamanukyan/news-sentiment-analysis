@@ -1,0 +1,156 @@
+<title>AIIM — Cross-Lingual FIMI Tooling for Analysts</title>
+<style>
+  :root{
+    --ink:#101720;--ink-2:#1b2530;--paper:#f5f6f8;--paper-2:#fff;
+    --slate:#58636f;--slate-2:#7c8792;--line:#d9dde3;--line-2:#e7eaee;
+    --signal:#d64429;--signal-ink:#a5301c;--analysis:#2f6f5f;--analysis-ink:#245445;--amber:#c6871f;
+    --serif:"Charter","Iowan Old Style","Palatino Linotype",Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono","Menlo",monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:900px;margin:0 auto;padding:0 28px}
+  h1,h2,h3{font-family:var(--serif);font-weight:600;text-wrap:balance;letter-spacing:-0.01em}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:var(--slate-2);margin:0 0 14px;display:flex;align-items:center;gap:10px}
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--signal);box-shadow:0 0 0 3px rgba(214,68,41,0.18);flex:none}
+
+  .hero{background:var(--ink);color:#eef1f4;border-bottom:3px solid var(--signal);
+    background-image:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.15)),repeating-linear-gradient(90deg,rgba(255,255,255,0.035) 0 1px,transparent 1px 64px)}
+  .hero .wrap{padding:60px 28px 52px}
+  .hero .eyebrow{color:#8b97a4}
+  .kicker{font-family:var(--mono);font-size:13px;letter-spacing:0.24em;color:#cfd6dd;font-weight:600;margin-bottom:30px}
+  .kicker b{color:#fff}
+  h1{font-size:clamp(28px,5vw,43px);line-height:1.09;margin:0 0 20px;color:#fff}
+  h1 .hl{color:#ff7a52}
+  .lede{font-size:clamp(17px,2.3vw,20px);color:#c3cbd3;max-width:62ch;margin:0}
+  .lede b{color:#fff;font-weight:600}
+
+  section{padding:52px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:clamp(23px,3.4vw,30px);margin:0 0 12px;color:var(--ink)}
+  .intro{color:var(--slate);max-width:64ch;margin:0 0 26px}
+  p{margin:0 0 16px}
+  .body{color:#2a3138;max-width:64ch}
+  .body strong{color:var(--ink)}
+
+  /* analyst capabilities */
+  .caps{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .cap{background:var(--paper-2);border:1px solid var(--line);border-top:2px solid var(--analysis);padding:20px 22px}
+  .cap .tag{font-family:var(--mono);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--analysis-ink);font-weight:600}
+  .cap h3{font-size:19px;margin:8px 0 7px;color:var(--ink)}
+  .cap p{margin:0;color:var(--slate);font-size:15px;line-height:1.55}
+
+  /* methodology */
+  .method{background:var(--paper-2);border:1px solid var(--line);overflow-x:auto}
+  .method-h{display:flex;justify-content:space-between;align-items:center;padding:13px 20px;border-bottom:1px solid var(--line);background:#fbfcfd}
+  .method-h .t{font-family:var(--mono);font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--slate)}
+  .step{display:grid;grid-template-columns:auto 1fr;gap:16px;padding:16px 20px;border-bottom:1px solid var(--line-2)}
+  .step:last-child{border-bottom:none}
+  .step .n{font-family:var(--mono);font-size:12px;color:var(--analysis-ink);font-weight:700;border:1px solid rgba(47,111,95,0.3);width:26px;height:26px;display:flex;align-items:center;justify-content:center}
+  .step h3{font-size:16px;margin:1px 0 3px}
+  .step p{margin:0;font-size:14.5px;color:var(--slate);line-height:1.5}
+
+  /* russian-lead callout */
+  .lead{display:grid;grid-template-columns:auto 1fr;gap:20px;align-items:center;background:var(--ink);color:#dfe4e9;border-left:3px solid var(--signal);padding:24px 28px}
+  .lead .big{font-family:var(--serif);font-size:40px;color:#fff;line-height:1}
+  .lead p{margin:0;color:#b9c2cb}
+  .lead b{color:#fff}
+
+  /* collaboration modes */
+  .modes{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .mode{background:var(--paper-2);border:1px solid var(--line);padding:18px 20px}
+  .mode .k{font-family:var(--mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--signal-ink);font-weight:600}
+  .mode h3{font-size:16px;margin:7px 0 5px}
+  .mode p{margin:0;font-size:14px;color:var(--slate);line-height:1.5}
+
+  footer{background:var(--ink-2);color:#c3cbd3}
+  footer .wrap{padding:38px 28px}
+  footer h2{color:#fff}
+  footer p{color:#aeb8c1;max-width:62ch}
+  .contact{font-family:var(--mono);font-size:14px;color:#fff;margin-top:18px}
+  .contact span{color:var(--signal)}
+  .disclaim{font-size:12.5px;color:#7c8792;margin-top:22px;border-top:1px solid rgba(255,255,255,0.1);padding-top:16px}
+
+  @media(max-width:640px){.caps,.modes{grid-template-columns:1fr}.lead{grid-template-columns:1fr}body{font-size:16px}}
+  @media print{body{background:#fff}.hero,.lead,footer{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">AIIM · <b>AI INFORMATION INTEGRITY MONITOR</b></div>
+    <p class="eyebrow"><span class="dot"></span> Tooling for disinformation researchers &amp; analysts</p>
+    <h1>Cross-lingual FIMI monitoring, built for <span class="hl">analysts</span> — not executive dashboards.</h1>
+    <p class="lede">A continuous, cross-lingual view of the narratives you already track by hand: what's emerging, whether the spread is <b>coordinated</b>, and the evidence behind every call — with the <b>Russian-language space</b> covered natively and exportable for your own research.</p>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <p class="eyebrow"><span class="dot"></span> The gap</p>
+    <h2>You're doing continuous monitoring with manual tools</h2>
+    <div class="body">
+      <p>Disinformation analysts spend their time on work a system should carry: watching the same channels every day, re-finding narratives across languages, reconstructing who published what and when, and rebuilding the evidence trail for every report. There's rarely a <strong>single continuous picture</strong> that spans Russian- and German-language sources at once — and when a narrative looks coordinated, proving it means stitching timestamps together by hand.</p>
+      <p>AIIM is built to be the layer underneath that work: it does the watching and the first-pass clustering, and hands the analyst a structured, auditable starting point instead of a blank page.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="eyebrow"><span class="dot"></span> What analysts get</p>
+    <h2>Research tooling, in the vocabulary you use</h2>
+    <div class="caps">
+      <div class="cap"><div class="tag">Narrative tracking</div><h3>Continuous cross-lingual clustering</h3><p>Emerging narratives surfaced and clustered across languages with AI relevance scoring — you curate and correct, the system keeps watch between sessions.</p></div>
+      <div class="cap"><div class="tag">Coordination</div><h3>Coordinated-behaviour detection</h3><p>Flags when a narrative is pushed in lockstep across sources, with the timing/content evidence attached — a documented method, not a black box.</p></div>
+      <div class="cap"><div class="tag">Provenance</div><h3>Auditable evidence trail</h3><p>Every narrative links back to the exact articles, posts, sources and timestamps — so a finding can be reproduced and defended.</p></div>
+      <div class="cap"><div class="tag">Data access</div><h3>Exportable for your research</h3><p>Narratives, coordination events and article-level data export to CSV / JSON / Markdown, plus DSA-format reports — feed it into your own pipelines.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="eyebrow"><span class="dot"></span> Methodology, in the open</p>
+    <h2>How coordination is flagged</h2>
+    <p class="intro">The point of a research tool is that the method is inspectable. Coordination scoring is transparent and contestable.</p>
+    <div class="method">
+      <div class="method-h"><span class="t">Coordination signal — pipeline</span></div>
+      <div class="step"><div class="n">1</div><div><h3>Cluster into narratives</h3><p>Cross-lingual articles/posts grouped by narrative via keyword + AI relevance scoring.</p></div></div>
+      <div class="step"><div class="n">2</div><div><h3>Measure timing &amp; content similarity</h3><p>Within a narrative, look for near-simultaneous publication and near-identical framing across independent sources over a defined window.</p></div></div>
+      <div class="step"><div class="n">3</div><div><h3>Score &amp; surface</h3><p>Combine into a coordination score (timing / content / both), record the sources and articles involved, and raise an event for analyst review.</p></div></div>
+      <div class="step"><div class="n">4</div><div><h3>Analyst adjudicates</h3><p>Review, confirm or dismiss — the human stays in the loop; the tool never auto-publishes a verdict.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="lead">
+      <div class="big">RU</div>
+      <p>The hardest and most-requested coverage for the German market is <b>Russian-language</b> monitoring — and it's where AIIM was proven. It was built and deployed against the <b>Russian / Armenian / English</b> information space around a contested election, exactly the Kremlin-adjacent, multilingual conditions European FIMI research is focused on. German-language coverage is being added alongside it.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="eyebrow"><span class="dot"></span> Working together</p>
+    <h2>Ways to collaborate</h2>
+    <div class="modes">
+      <div class="mode"><div class="k">Pilot</div><h3>Scoped monitoring pilot</h3><p>Point AIIM at a narrative set your team cares about and evaluate the output over a few weeks.</p></div>
+      <div class="mode"><div class="k">Co-research</div><h3>Joint methodology work</h3><p>Refine and validate the coordination method together; publishable, reproducible findings.</p></div>
+      <div class="mode"><div class="k">Data</div><h3>Data &amp; export access</h3><p>Structured cross-lingual data for your own analysis, on infrastructure you're comfortable with.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p class="eyebrow" style="color:#8b97a4"><span class="dot"></span> Next step</p>
+    <h2>A 30-minute walkthrough with your analysts</h2>
+    <p>See the narrative board, coordination events and the evidence trail running against real sources — then decide whether a scoped pilot or a joint piece of research is worth a try. EU-region hosting and self-host options available.</p>
+    <p class="contact"><span>▸</span> demo@aiim.am &nbsp;·&nbsp; aiim.am</p>
+    <p class="disclaim">AIIM — AI Information Integrity Monitor. Independently developed FIMI-monitoring platform; deployed for the Armenia 2026 election information environment (case study). Claims describe platform capability; no audience or traffic metrics are implied.</p>
+  </div>
+</footer>

@@ -1,0 +1,167 @@
+<title>AIIM — Open-Source FIMI Monitoring (Prototype Fund)</title>
+<style>
+  :root{
+    --ink:#101720;--ink-2:#1b2530;--paper:#f5f6f8;--paper-2:#fff;
+    --slate:#58636f;--slate-2:#7c8792;--line:#d9dde3;--line-2:#e7eaee;
+    --signal:#d64429;--signal-ink:#a5301c;--analysis:#2f6f5f;--analysis-ink:#245445;--amber:#c6871f;
+    --serif:"Charter","Iowan Old Style","Palatino Linotype",Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono","Menlo",monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:880px;margin:0 auto;padding:0 28px}
+  h1,h2,h3{font-family:var(--serif);font-weight:600;text-wrap:balance;letter-spacing:-0.01em}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:var(--slate-2);margin:0 0 14px;display:flex;align-items:center;gap:10px}
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--analysis);box-shadow:0 0 0 3px rgba(47,111,95,0.18);flex:none}
+
+  /* hero — public-interest / open framing (teal-led) */
+  .hero{background:var(--ink);color:#eef1f4;border-bottom:3px solid var(--analysis);
+    background-image:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.15)),repeating-linear-gradient(90deg,rgba(255,255,255,0.035) 0 1px,transparent 1px 64px)}
+  .hero .wrap{padding:60px 28px 54px}
+  .hero .eyebrow{color:#8b97a4}
+  .kicker{font-family:var(--mono);font-size:13px;letter-spacing:0.24em;color:#cfd6dd;font-weight:600;margin-bottom:30px}
+  .kicker b{color:#fff}
+  h1{font-size:clamp(29px,5.2vw,44px);line-height:1.09;margin:0 0 20px;color:#fff}
+  h1 .hl{color:#5fb59a}
+  .lede{font-size:clamp(17px,2.3vw,20px);color:#c3cbd3;max-width:60ch;margin:0}
+  .lede b{color:#fff;font-weight:600}
+  .osbadge{display:inline-flex;align-items:center;gap:9px;margin-top:26px;font-family:var(--mono);font-size:12.5px;color:#bfeadd;border:1px solid rgba(95,181,154,0.4);background:rgba(47,111,95,0.16);padding:7px 13px;border-radius:3px}
+  .osbadge b{color:#fff}
+
+  section{padding:52px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:clamp(23px,3.4vw,30px);margin:0 0 12px;color:var(--ink)}
+  .intro{color:var(--slate);max-width:63ch;margin:0 0 26px}
+  p{margin:0 0 16px}
+  .body{color:#2a3138;max-width:64ch}
+  .body strong{color:var(--ink)}
+
+  /* build-in-6-months list */
+  .deliver{display:grid;gap:14px}
+  .d-item{display:grid;grid-template-columns:auto 1fr;gap:16px;align-items:start;background:var(--paper-2);border:1px solid var(--line);border-left:2px solid var(--analysis);padding:18px 20px}
+  .d-item .num{font-family:var(--mono);font-size:13px;font-weight:700;color:var(--analysis-ink);border:1px solid rgba(47,111,95,0.35);background:rgba(47,111,95,0.08);width:28px;height:28px;display:flex;align-items:center;justify-content:center}
+  .d-item h3{font-size:18px;margin:2px 0 5px;color:var(--ink)}
+  .d-item p{margin:0;color:var(--slate);font-size:15px;line-height:1.5}
+
+  /* criteria mapping */
+  .crit{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .c{background:var(--paper-2);border:1px solid var(--line);padding:18px 20px}
+  .c .k{font-family:var(--mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:var(--analysis-ink);font-weight:600}
+  .c p{margin:7px 0 0;font-size:15px;color:var(--slate);line-height:1.5}
+
+  /* proof band */
+  .proof{background:var(--ink);color:#dfe4e9;border-left:3px solid var(--signal);padding:28px 30px}
+  .proof .eyebrow{color:#8b97a4}
+  .proof .eyebrow .dot{background:var(--signal);box-shadow:0 0 0 3px rgba(214,68,41,0.2)}
+  .proof h3{color:#fff;font-size:22px;margin:0 0 12px}
+  .proof p{color:#b9c2cb;max-width:62ch}
+  .proof b{color:#fff}
+
+  .facts{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-top:8px}
+  .fact{background:var(--paper-2);padding:16px 18px}
+  .fact .n{font-family:var(--mono);font-size:20px;color:var(--ink);font-weight:600}
+  .fact .l{font-size:12.5px;color:var(--slate);margin-top:3px;line-height:1.35}
+
+  footer{background:var(--ink-2);color:#c3cbd3}
+  footer .wrap{padding:38px 28px}
+  footer h2{color:#fff}
+  footer p{color:#aeb8c1;max-width:60ch}
+  .ask{display:flex;flex-wrap:wrap;gap:24px;margin:20px 0 4px;font-family:var(--mono)}
+  .ask .a .n{font-size:20px;color:#fff;font-weight:600}
+  .ask .a .l{font-size:12px;color:#8b97a4;letter-spacing:0.04em}
+  .contact{font-family:var(--mono);font-size:14px;color:#fff;margin-top:20px}
+  .contact span{color:var(--analysis)}
+  .disclaim{font-size:12.5px;color:#7c8792;margin-top:22px;border-top:1px solid rgba(255,255,255,0.1);padding-top:16px}
+
+  @media(max-width:640px){.crit,.facts{grid-template-columns:1fr}.d-item{grid-template-columns:1fr}.facts{grid-template-columns:1fr}body{font-size:16px}}
+  @media print{body{background:#fff}.hero,.proof,footer{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
+</style>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">AIIM · <b>AI INFORMATION INTEGRITY MONITOR</b></div>
+    <p class="eyebrow"><span class="dot"></span> Prototype Fund · Public-interest software</p>
+    <h1>Open-source infrastructure to detect <span class="hl">coordinated disinformation</span> across languages.</h1>
+    <p class="lede">Democratic societies are targeted by organised information manipulation faster than watchdogs, researchers and civil society can read it. AIIM turns raw feeds into a defensible picture of <b>which narratives are spreading, whether the spread is coordinated, and how serious it is</b> — and the core detection engine will be released as <b>free, open-source software</b>.</p>
+    <span class="osbadge">◆ Funding period deliverable: <b>an open-source FIMI-detection core</b></span>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <p class="eyebrow"><span class="dot"></span> The public-interest problem</p>
+    <h2>Monitoring disinformation is public-interest work done by hand</h2>
+    <div class="body">
+      <p>Foreign information manipulation and interference (<strong>FIMI</strong>) is a standing threat to democratic discourse — coordinated narratives on energy, migration, elections and war move across news, Telegram and social platforms across <strong>multiple languages</strong> at once.</p>
+      <p>The people defending against it — fact-checkers, disinformation researchers, civil-society organisations, small newsrooms — mostly work <strong>manually</strong>: watching channels by hand, tracking narratives in spreadsheets, writing reports from scratch. The tooling that could give them a continuous, cross-lingual picture is either locked inside expensive commercial products or does not exist as <strong>open, auditable infrastructure</strong> the community can trust and extend.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="eyebrow"><span class="dot"></span> What gets built in the funding period</p>
+    <h2>An open-source FIMI-detection core</h2>
+    <p class="intro">A working platform already exists (see below). The Prototype Fund period funds carving out and hardening the parts most useful to the community as <strong>free, reusable software</strong>.</p>
+    <div class="deliver">
+      <div class="d-item"><div class="num">1</div><div><h3>Cross-lingual narrative detection</h3><p>Open module that clusters articles/posts into narratives across languages using keyword and AI relevance scoring — with German added alongside the existing Russian/English/Armenian coverage.</p></div></div>
+      <div class="d-item"><div class="num">2</div><div><h3>Coordination-detection engine</h3><p>Transparent, documented method for flagging when the same narrative is pushed in lockstep across sources (timing + content similarity) — the signal that separates an organic story from an operation.</p></div></div>
+      <div class="d-item"><div class="num">3</div><div><h3>Open reporting &amp; data export</h3><p>Export of narratives, coordination events and evidence in open formats (CSV, JSON, Markdown) plus DSA-compliance report templates, so researchers and watchdogs can build on the output.</p></div></div>
+      <div class="d-item"><div class="num">4</div><div><h3>Documentation &amp; reproducibility</h3><p>Public repository, setup docs and methodology write-up under a free licence, so any civil-society team can self-host and audit how detection works.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="eyebrow"><span class="dot"></span> Why open source</p>
+    <h2>Trust in a monitoring tool requires seeing how it decides</h2>
+    <div class="body">
+      <p>A system that labels content as "coordinated" or "high-threat" is making consequential judgements. For that to be legitimate in a democratic context, the method has to be <strong>inspectable, contestable and reusable</strong> — not a black box sold per seat. Open-sourcing the detection core lets researchers validate it, lets civil-society groups run it on their own infrastructure under their own data governance, and lets the community improve it. Public-interest monitoring should sit on public infrastructure.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="proof">
+      <p class="eyebrow"><span class="dot"></span> Proven capability — not starting from zero</p>
+      <h3>Already built and deployed against a live information war</h3>
+      <p>AIIM was developed and deployed to monitor the information environment around a contested national election, ingesting and analysing sources continuously across <b>Russian, Armenian and English</b> — the demanding, Kremlin-adjacent, multilingual conditions this problem actually shows up in. The funding turns a proven working system into <b>open, community-owned infrastructure</b>.</p>
+      <div class="facts">
+        <div class="fact"><div class="n">3→4</div><div class="l">languages analysed — adding German</div></div>
+        <div class="fact"><div class="n">RSS·TG</div><div class="l">news, Telegram &amp; social ingestion</div></div>
+        <div class="fact"><div class="n">Docker</div><div class="l">self-hostable from day one</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="eyebrow"><span class="dot"></span> Fit with the programme</p>
+    <h2>Why this is a Prototype Fund project</h2>
+    <div class="crit">
+      <div class="c"><div class="k">Common good</div><p>Strengthens democratic resilience against disinformation — the beneficiaries are researchers, civil society and the public, not a paying customer.</p></div>
+      <div class="c"><div class="k">Open source</div><p>The detection core ships under a free licence with public documentation, built to be self-hosted and audited.</p></div>
+      <div class="c"><div class="k">Feasible in 6 months</div><p>Scope is a carve-out and hardening of an already-working platform, not research from scratch — de-risked and demonstrable.</p></div>
+      <div class="c"><div class="k">Independent builder</div><p>Developed by an individual maintainer with a deployed track record on the hardest version of the problem.</p></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p class="eyebrow" style="color:#8b97a4"><span class="dot"></span> The ask</p>
+    <h2>Fund the open-source core</h2>
+    <p>Support building and releasing AIIM's FIMI-detection core as free, self-hostable software the disinformation-research community can trust, run and extend.</p>
+    <div class="ask">
+      <div class="a"><div class="n">~€47,500</div><div class="l">PROTOTYPE FUND SCALE</div></div>
+      <div class="a"><div class="n">6 months</div><div class="l">FUNDING PERIOD</div></div>
+      <div class="a"><div class="n">Free licence</div><div class="l">OPEN-SOURCE RELEASE</div></div>
+    </div>
+    <p class="contact"><span>▸</span> demo@aiim.am &nbsp;·&nbsp; aiim.am</p>
+    <p class="disclaim">AIIM — AI Information Integrity Monitor. Independently developed FIMI-monitoring platform; deployed for the Armenia 2026 election information environment (case study). Figures describe platform capability, not audience metrics. Exact application round and licence to be confirmed.</p>
+  </div>
+</footer>

@@ -1,0 +1,390 @@
+<title>AIIM — FIMI Monitoring & Narrative Intelligence</title>
+<style>
+  :root {
+    --ink: #101720;
+    --ink-2: #1b2530;
+    --paper: #f5f6f8;
+    --paper-2: #ffffff;
+    --slate: #58636f;
+    --slate-2: #7c8792;
+    --line: #d9dde3;
+    --line-2: #e7eaee;
+    --signal: #d64429;   /* threat / detection */
+    --signal-ink: #a5301c;
+    --analysis: #34706e;  /* analysis / compliance */
+    --amber: #c6871f;    /* elevated */
+    --serif: "Charter", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Menlo", monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 28px; }
+
+  /* ---------- eyebrows & type utilities ---------- */
+  .eyebrow {
+    font-family: var(--mono);
+    font-size: 12px;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--slate-2);
+    margin: 0 0 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .eyebrow .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--signal);
+    box-shadow: 0 0 0 3px rgba(214,68,41,0.18);
+    flex: none;
+  }
+
+  h1, h2, h3 { font-family: var(--serif); font-weight: 600; text-wrap: balance; letter-spacing: -0.01em; }
+
+  /* ---------- hero ---------- */
+  .hero {
+    background: var(--ink);
+    color: #eef1f4;
+    background-image:
+      linear-gradient(180deg, rgba(255,255,255,0.03), rgba(0,0,0,0.15)),
+      repeating-linear-gradient(90deg, rgba(255,255,255,0.035) 0 1px, transparent 1px 64px);
+    border-bottom: 3px solid var(--signal);
+  }
+  .hero .wrap { padding-top: 62px; padding-bottom: 58px; }
+  .hero .eyebrow { color: #8b97a4; }
+  .brand {
+    font-family: var(--mono);
+    font-size: 14px;
+    letter-spacing: 0.28em;
+    color: #cfd6dd;
+    font-weight: 600;
+    margin-bottom: 34px;
+  }
+  .brand b { color: #fff; }
+  h1 {
+    font-size: clamp(30px, 5.4vw, 46px);
+    line-height: 1.08;
+    margin: 0 0 20px;
+    color: #fff;
+  }
+  h1 .hl { color: #ff7a52; }
+  .lede {
+    font-size: clamp(17px, 2.3vw, 20px);
+    color: #c3cbd3;
+    max-width: 60ch;
+    margin: 0;
+  }
+  .lede b { color: #fff; font-weight: 600; }
+
+  .factstrip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.1);
+    margin-top: 40px;
+  }
+  .fact { background: var(--ink-2); padding: 16px 18px; }
+  .fact .n { font-family: var(--mono); font-size: 22px; color: #fff; font-weight: 600; letter-spacing: -0.02em; }
+  .fact .l { font-size: 12px; color: #93a0ac; margin-top: 3px; line-height: 1.35; }
+
+  /* ---------- sections ---------- */
+  section { padding: 56px 0; border-bottom: 1px solid var(--line); }
+  section:last-of-type { border-bottom: none; }
+  h2 { font-size: clamp(23px, 3.4vw, 30px); margin: 0 0 10px; color: var(--ink); }
+  .section-intro { color: var(--slate); max-width: 62ch; margin: 0 0 30px; }
+
+  /* problem */
+  .problem-body { color: #2a3138; max-width: 64ch; }
+  .problem-body p { margin: 0 0 16px; }
+  .problem-body strong { color: var(--ink); }
+
+  /* capability cards */
+  .caps { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .cap {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    border-top: 2px solid var(--analysis);
+    padding: 22px 22px 24px;
+  }
+  .cap .tag {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--analysis); font-weight: 600;
+  }
+  .cap h3 { font-size: 20px; margin: 8px 0 8px; color: var(--ink); }
+  .cap p { margin: 0; color: var(--slate); font-size: 15.5px; line-height: 1.55; }
+
+  /* threat board */
+  .board {
+    background: var(--paper-2);
+    border: 1px solid var(--line);
+    overflow-x: auto;
+  }
+  .board-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 13px 18px; border-bottom: 1px solid var(--line);
+    background: #fbfcfd;
+  }
+  .board-head .t { font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--slate); }
+  .board-head .live { font-family: var(--mono); font-size: 11px; color: var(--analysis); display: flex; align-items: center; gap: 7px; }
+  .board-head .live .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--analysis); }
+  table { width: 100%; border-collapse: collapse; min-width: 560px; }
+  th {
+    font-family: var(--mono); font-size: 10.5px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--slate-2); text-align: left; font-weight: 600;
+    padding: 11px 18px; border-bottom: 1px solid var(--line);
+  }
+  td { padding: 14px 18px; border-bottom: 1px solid var(--line-2); vertical-align: top; font-size: 15px; }
+  tr:last-child td { border-bottom: none; }
+  .narr { color: var(--ink); font-weight: 500; }
+  .langs { font-family: var(--mono); font-size: 12px; color: var(--slate); margin-top: 4px; }
+  .pill {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.04em; font-weight: 600;
+    padding: 3px 9px; border-radius: 2px; white-space: nowrap; display: inline-block;
+  }
+  .pill.crit { background: rgba(214,68,41,0.12); color: var(--signal-ink); border: 1px solid rgba(214,68,41,0.3); }
+  .pill.elev { background: rgba(198,135,31,0.13); color: #8a5c10; border: 1px solid rgba(198,135,31,0.32); }
+  .pill.watch { background: rgba(88,99,111,0.1); color: var(--slate); border: 1px solid var(--line); }
+  .coord { font-family: var(--mono); font-size: 12px; color: var(--signal-ink); font-weight: 600; }
+  .coord.none { color: var(--slate-2); font-weight: 400; }
+  .board-note { padding: 11px 18px; font-size: 12.5px; color: var(--slate-2); background: #fbfcfd; border-top: 1px solid var(--line); }
+
+  /* case study */
+  .case {
+    background: var(--ink);
+    color: #dfe4e9;
+    border-left: 3px solid var(--signal);
+    padding: 30px 32px;
+  }
+  .case .eyebrow { color: #8b97a4; }
+  .case h3 { color: #fff; font-size: 23px; margin: 0 0 14px; }
+  .case p { margin: 0 0 16px; color: #b9c2cb; max-width: 62ch; }
+  .case p:last-child { margin-bottom: 0; }
+  .case b { color: #fff; font-weight: 600; }
+  .case ul { margin: 0 0 4px; padding: 0; list-style: none; display: grid; gap: 10px; }
+  .case li { padding-left: 22px; position: relative; color: #c8d0d8; font-size: 15.5px; }
+  .case li::before { content: "→"; position: absolute; left: 0; color: var(--signal); }
+
+  /* sovereignty */
+  .sov { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  .sov-item { display: flex; gap: 14px; align-items: flex-start; }
+  .sov-item .k {
+    font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--analysis);
+    border: 1px solid rgba(52,112,110,0.35); background: rgba(52,112,110,0.08);
+    width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; flex: none;
+  }
+  .sov-item .b h3 { font-size: 16px; margin: 3px 0 4px; }
+  .sov-item .b p { margin: 0; font-size: 14.5px; color: var(--slate); line-height: 1.5; }
+
+  /* audience */
+  .aud { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+  .aud-row {
+    display: flex; gap: 14px; align-items: baseline;
+    padding: 14px 16px; background: var(--paper-2); border: 1px solid var(--line);
+  }
+  .aud-row .who { font-weight: 600; color: var(--ink); font-size: 15.5px; }
+  .aud-row .why { color: var(--slate); font-size: 14px; }
+
+  /* footer */
+  footer { background: var(--ink-2); color: #c3cbd3; }
+  footer .wrap { padding: 40px 28px; }
+  footer h2 { color: #fff; }
+  footer p { color: #aeb8c1; max-width: 60ch; }
+  .contact { font-family: var(--mono); font-size: 14px; color: #fff; margin-top: 18px; letter-spacing: 0.02em; }
+  .contact span { color: var(--signal); }
+  .disclaim { font-size: 12.5px; color: #7c8792; margin-top: 26px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 18px; }
+
+  @media (max-width: 640px) {
+    .caps, .sov, .aud { grid-template-columns: 1fr; }
+    .factstrip { grid-template-columns: 1fr 1fr; }
+    body { font-size: 16px; }
+  }
+  @media print {
+    body { background: #fff; }
+    .hero, .case, footer { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="brand">AIIM · <b>AI INFORMATION INTEGRITY MONITOR</b></div>
+    <p class="eyebrow"><span class="dot"></span> FIMI Monitoring · Narrative Intelligence · DSA-Ready</p>
+    <h1>Foreign information manipulation doesn't announce itself. <span class="hl">AIIM finds it.</span></h1>
+    <p class="lede">A monitoring and narrative-intelligence platform built and deployed on the <b>Russian-language information space</b> — tracking coordinated campaigns across news, Telegram and social sources, and turning them into analyst-ready alerts and DSA-format reporting.</p>
+
+    <div class="factstrip">
+      <div class="fact"><div class="n">3</div><div class="l">languages analysed in parallel — Russian, English, Armenian</div></div>
+      <div class="fact"><div class="n">4+</div><div class="l">source types — RSS, Telegram, social, web scraping</div></div>
+      <div class="fact"><div class="n">24/7</div><div class="l">continuous ingestion with real-time analyst alerts</div></div>
+      <div class="fact"><div class="n">DSA</div><div class="l">compliance-format reports built in from day one</div></div>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <p class="eyebrow"><span class="dot"></span> The problem</p>
+    <h2>The manipulation is coordinated. The response usually isn't.</h2>
+    <div class="problem-body">
+      <p>Foreign information manipulation and interference — <strong>FIMI</strong> — is now a standing feature of the European information environment, not an election-day event. Kremlin-aligned narratives move across <strong>Russian-language media, Telegram channels and social platforms</strong> faster than any newsroom or oversight body can read them, seeding stories on energy, migration, Ukraine and NATO that surface in German-language discourse days later.</p>
+      <p>The people mandated to watch this — foundations, watchdogs, media authorities, DSA researchers — are mostly doing it by hand: monitoring channels manually, tracking narratives in spreadsheets, and writing reports from scratch. There is <strong>no continuous, cross-lingual picture</strong> of which narratives are spreading, whether the spread is coordinated, and how serious it is.</p>
+      <p>AIIM was built to close exactly that gap — and it was built against the hardest version of the problem: the <strong>Russian-language information space in a contested election.</strong></p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="eyebrow"><span class="dot"></span> What it does</p>
+    <h2>From raw feeds to a defensible threat picture</h2>
+    <p class="section-intro">Every capability maps to the vocabulary European oversight already uses — FIMI, coordinated inauthentic behaviour, and Digital Services Act reporting.</p>
+    <div class="caps">
+      <div class="cap">
+        <div class="tag">Narrative tracking</div>
+        <h3>Detect &amp; follow narratives</h3>
+        <p>Keyword and AI relevance scoring surface emerging narratives across languages and cluster the articles carrying them — with an approval workflow so analysts stay in control of what counts.</p>
+      </div>
+      <div class="cap">
+        <div class="tag">Coordination</div>
+        <h3>Flag coordinated campaigns</h3>
+        <p>Cross-source detection identifies when the same narrative is pushed in lockstep — the coordinated-behaviour signal that distinguishes an organic story from an operation.</p>
+      </div>
+      <div class="cap">
+        <div class="tag">Alerting</div>
+        <h3>Real-time analyst alerts</h3>
+        <p>Custom rules, threat levels, assignment and resolution workflow, and live notifications — so a spike becomes a triaged case, not a missed signal.</p>
+      </div>
+      <div class="cap">
+        <div class="tag">Reporting</div>
+        <h3>DSA-format reporting</h3>
+        <p>Daily, weekly, incident and EU DSA-compliance reports exported to PDF, Excel, CSV and Markdown — the evidence layer oversight and funders actually ask for.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="eyebrow"><span class="dot"></span> The product is real</p>
+    <h2>A working monitoring surface, not a mockup</h2>
+    <p class="section-intro">Analysts see narratives ranked by threat level, tagged by language, and flagged when spread looks coordinated — the same board that runs against live sources today.</p>
+    <div class="board">
+      <div class="board-head">
+        <span class="t">Narrative Threat Board</span>
+        <span class="live"><span class="pulse"></span> LIVE · illustrative</span>
+      </div>
+      <table>
+        <thead>
+          <tr><th>Narrative</th><th>Threat</th><th>Coordination</th><th>Sources</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><div class="narr">"EU sanctions are collapsing the German economy"</div><div class="langs">RU · DE · EN</div></td>
+            <td><span class="pill crit">CRITICAL</span></td>
+            <td><span class="coord">◆ 14 sources / 6h</span></td>
+            <td>News + Telegram</td>
+          </tr>
+          <tr>
+            <td><div class="narr">"Ukraine aid is fuelling corruption at home"</div><div class="langs">RU · DE</div></td>
+            <td><span class="pill elev">ELEVATED</span></td>
+            <td><span class="coord">◆ 8 sources / 12h</span></td>
+            <td>Telegram + web</td>
+          </tr>
+          <tr>
+            <td><div class="narr">"Migration wave engineered by Brussels"</div><div class="langs">DE · RU</div></td>
+            <td><span class="pill elev">ELEVATED</span></td>
+            <td><span class="coord none">— organic</span></td>
+            <td>Social + news</td>
+          </tr>
+          <tr>
+            <td><div class="narr">"Renewables push is a foreign takeover"</div><div class="langs">DE</div></td>
+            <td><span class="pill watch">WATCH</span></td>
+            <td><span class="coord none">— organic</span></td>
+            <td>News</td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="board-note">Illustrative narratives shown for a German-language deployment. The engine, workflow and reporting are live today on the Russian/Armenian/English information space.</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="case">
+      <p class="eyebrow"><span class="dot"></span> Case study — proof of deployment</p>
+      <h3>Built and run against the Armenia 2026 election environment</h3>
+      <p>AIIM was developed and deployed to monitor the information space around a live, contested national election — the most demanding test a system like this can face. It ingested and analysed sources continuously across <b>Russian, Armenian and English</b>, the exact multilingual, Kremlin-adjacent conditions European monitors care about.</p>
+      <ul>
+        <li>Continuous multilingual ingestion from news, Telegram and social sources</li>
+        <li>AI narrative detection, coordination flagging and threat-level triage in production</li>
+        <li>Multi-organisation, role-based access with a full analyst workflow</li>
+        <li>DSA-format compliance reporting generated end-to-end</li>
+      </ul>
+      <p style="margin-top:16px;">The Armenian deployment is the <b>proof, not the product.</b> The same engine points at any information space — and Russian-language capability transfers directly to the German market's number-one concern.</p>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="eyebrow"><span class="dot"></span> Built for European deployment</p>
+    <h2>Sovereignty answered, not deferred</h2>
+    <p class="section-intro">German and EU bodies treat data residency as a yes/no gate. AIIM is architected to pass it.</p>
+    <div class="sov">
+      <div class="sov-item">
+        <div class="k">EU</div>
+        <div class="b"><h3>EU-region hosting</h3><p>Deployable entirely within EU infrastructure — data stays in the jurisdiction that regulates it.</p></div>
+      </div>
+      <div class="sov-item">
+        <div class="k">§</div>
+        <div class="b"><h3>GDPR by design</h3><p>Organisation-scoped isolation, role-based access and audit-ready reporting built into the core.</p></div>
+      </div>
+      <div class="sov-item">
+        <div class="k">⌂</div>
+        <div class="b"><h3>On-prem / self-host</h3><p>Containerised (Docker) for self-hosted deployment where a body needs full custody of the stack.</p></div>
+      </div>
+      <div class="sov-item">
+        <div class="k">◊</div>
+        <div class="b"><h3>Open to open-source</h3><p>Core monitoring components can be opened up — a fit for public-interest technology funding.</p></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="eyebrow"><span class="dot"></span> Who it's for</p>
+    <h2>The people already mandated to watch this</h2>
+    <div class="aud">
+      <div class="aud-row"><span class="who">Political foundations</span><span class="why">— democracy &amp; counter-disinfo programmes</span></div>
+      <div class="aud-row"><span class="who">Disinfo watchdogs &amp; think tanks</span><span class="why">— analysts who need tooling, not spreadsheets</span></div>
+      <div class="aud-row"><span class="who">Media authorities</span><span class="why">— DSA enforcement at state level</span></div>
+      <div class="aud-row"><span class="who">EDMO / research hubs</span><span class="why">— cross-lingual data for researchers</span></div>
+      <div class="aud-row"><span class="who">Fact-checking desks</span><span class="why">— earlier signal on spreading claims</span></div>
+      <div class="aud-row"><span class="who">Public broadcasters</span><span class="why">— verification &amp; monitoring support</span></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p class="eyebrow"><span class="dot"></span> Next step</p>
+    <h2>A 30-minute walkthrough of the live system</h2>
+    <p>See the narrative board, coordination flags and DSA reporting running against real sources — then talk through what a German-language deployment or pilot would look like for your organisation.</p>
+    <p class="contact"><span>▸</span> demo@aiim.am &nbsp;·&nbsp; aiim.am</p>
+    <p class="disclaim">AIIM — AI Information Integrity Monitor. Independently developed FIMI-monitoring and narrative-intelligence platform. Deployed for the Armenia 2026 election information environment; presented here as a case study. German-language coverage and EU-region deployment available on request.</p>
+  </div>
+</footer>
