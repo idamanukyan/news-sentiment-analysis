@@ -90,7 +90,8 @@ public class Source {
     public enum Language {
         ARMENIAN,
         RUSSIAN,
-        ENGLISH
+        ENGLISH,
+        GERMAN
     }
 
     public enum PoliticalLeaning {
