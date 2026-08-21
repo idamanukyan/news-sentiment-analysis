@@ -28,7 +28,7 @@ BEGIN
           )
     LOOP
         INSERT INTO article_narratives (article_id, narrative_id, confidence, detected_at, relevance_score)
-        SELECT DISTINCT a.id, n_record.id, 0.7, NOW(), NULL
+        SELECT DISTINCT a.id, n_record.id, 0.7, NOW(), NULL::double precision
         FROM articles a
         WHERE a.published_at >= NOW() - INTERVAL '90 days'
           AND EXISTS (
