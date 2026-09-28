@@ -1,0 +1,32 @@
+priority,name,category,what_they_do,why_aiim,contact,url,verified
+1,GADMO,EDMO/Observatory,DACH fact-checker + academic anti-disinfo alliance (EDMO hub),Primary DACH partner; cross-border incl RU monitoring; TU Dortmund pilot host,info@gadmo.eu,https://gadmo.eu/en/imprint/,yes
+2,CORRECTIV.Faktencheck,Fact-checking,Nonprofit investigative fact-check unit; Faktenforum,Cleanest partner fit; values RU FIMI monitoring for sourcing,faktencheck@correctiv.org,https://correctiv.org/kontakt/,yes
+3,CeMAS,Watchdog/Think tank,Monitors disinfo/conspiracy/extremism,Mission-identical; fastest German credibility win,presse@cemas.io,https://cemas.io/en,yes
+4,EU DisinfoLab,Watchdog/Think tank,Central EU civil-society disinfo hub; #Disinfo conference,Highest network-multiplier across EU FIMI field,info@disinfo.eu,https://www.disinfo.eu/,yes
+5,Landesanstalt fuer Medien NRW,Media authority,Largest state media authority; Journalism Lab verification projects,Warmest regulator fit; realistic first public-sector pilot,info@medienanstalt-nrw.de,https://www.medienanstalt-nrw.de/kontakt-anfahrt.html,yes
+6,Friedrich-Naumann-Stiftung,Political foundation,FDP/liberal; open & digital society,Runs #FreedomFightsFake (East/SE Europe RU-relevant); grant-host,service@freiheit.org,https://freedomfightsfake.org,yes
+7,Konrad-Adenauer-Stiftung,Political foundation,CDU-aligned; ~100 country offices; democracy promotion,Regional Media Programmes fund disinfo-resilience,zentrale@kas.de,https://www.kas.de/en/media-programme,yes
+8,Friedrich-Ebert-Stiftung,Political foundation,SPD-aligned; democracy promotion,digidemos + Democracy of the Future (OSCE/Russia neighbourhood),democracy.vienna@fes.de,https://www.fes.de/digidemos,yes
+9,Heinrich-Boell-Stiftung,Political foundation,Greens-aligned; digital policy; Brussels presence,Best-matched; Digital Policy + Discourse Analysis + DSA focus,info@boell.de,https://www.boell.de/en/contact,yes
+10,Rosa-Luxemburg-Stiftung,Political foundation,Die-Linke-aligned; social/public-sphere analysis,Weaker fit; credibility on platform-power,info@rosalux.org,https://www.rosalux.de/en/servicenavigation/contact,yes
+11,Hanns-Seidel-Stiftung,Political foundation,CSU-aligned; political education ~60 offices,Partner via international/democracy offices; warm intro advised,contact form only,https://www.hss.de/en/contact/,no
+12,ISD Germany,Watchdog/Think tank,OSINT monitoring of influence ops/election disinfo,High-value partner + credibility; briefs policymakers,via form,https://www.isdglobal.org/contact/,yes
+13,Alliance4Europe,Watchdog/Think tank,Counter Disinformation Network / hybrid-threat defence,Partner/network host; AIIM as shared member tooling,info@alliance4europe.eu,https://alliance4europe.eu/imprint,yes
+14,Democracy Reporting International,Watchdog/Think tank,Digital-democracy NGO; strong DSA arm,Customer + credibility; DSA-driven election-disinfo research,info@democracy-reporting.org,https://democracy-reporting.org/en/office/global,no
+15,Center for Countering Digital Hate,Watchdog/Think tank,Research/advocacy vs online hate & misinfo,Partner/credibility; least EU-native,via form,https://counterhate.com/contact/,no
+16,GLOBSEC,Watchdog/Think tank,RU/CEE FIMI focus; EDMO consortium member,Stronger RU/CEE alternative to CCDH,via site,https://www.globsec.org,yes
+17,EDMO central,EDMO/Observatory,EU-wide coordinating body; 15 national hubs; DSA-embedded,Grant-host/credibility/gateway to all hubs,edmo@eui.eu,https://edmo.eu/,yes
+18,EDMO BELUX,EDMO/Observatory,Regional EDMO hub (co-founded by EU DisinfoLab),Partner/credibility; DACH-adjacent,info@disinfo.eu,https://www.disinfo.eu/projects/edmo-belux/,yes
+19,die medienanstalten (DLM),Media authority,Joint body of 14 state media authorities; disinfo mandate,Customer/credibility; national anchor reference,info@die-medienanstalten.de,https://www.die-medienanstalten.de/service/kontakt,yes
+20,MABB Berlin-Brandenburg,Media authority,State authority; Desinfopoint program,Partner/credibility; Berlin-connected,mail@mabb.de,https://www.mabb.de/uber-die-mabb/kontakt,yes
+21,DSC @ Bundesnetzagentur,Media authority,Germany national DSA enforcement authority,Most strategic; DSA systemic-risk/FIMI maps onto AIIM,DSC10-Postfach@bnetza.de,https://www.dsc.bund.de,no
+22,dpa Faktencheck,Fact-checking,Wire-agency desk; B2B verification to newsrooms,Cleanest commercial customer; AIIM natural upstream feed,faktencheck@dpa.com,https://www.dpa.com/de/faktencheck-support-redaktionen,yes
+23,AFP Faktencheck Deutschland,Fact-checking,German desk of AFP multilingual network,Partner + credibility; multilingual overlap,WhatsApp +49 172 252 4054,https://faktencheck.afp.com/list,no
+24,ARD tagesschau faktenfinder,Fact-checking,Public-broadcaster fact-check unit,Credibility/customer; high reach,via ARD-aktuell,https://www.tagesschau.de/faktenfinder,no
+25,ZDFheute Faktencheck,Fact-checking,Public-broadcaster fact-check unit,Credibility/customer,zuschauerservice@zdf-service.de,https://www.zdfheute.de/in-eigener-sache/korrekturen-104.html,yes
+26,Leibniz Hans-Bredow-Institut,Academic,Media-governance research; Digital Disinformation Hub,Research partner/grant co-applicant + academic credibility,info@leibniz-hbi.de,https://leibniz-hbi.de/en/contact,yes
+27,Weizenbaum-Institut,Academic,German Internet Institute; disinfo/platform/AI regulation,Research partner; German-EU grant co-applicant,info@weizenbaum-institut.de,https://www.weizenbaum-institut.de/en/contact/,yes
+28,TU Muenchen Political Data Science,Academic,Computational disinformation / data science (Prof. Hegelich),Academic co-applicant / methodological partner,simon.hegelich@hfp.tum.de,https://www.hfp.tum.de/politicaldatascience/impressum/,yes
+29,Auswaertiges Amt StratCom,Gov/EU FIMI,Federal FIMI unit; Jan 2026 FIMI Common Operational Picture,Customer/credibility; Russia/Ukraine hybrid-threats sub-group,poststelle@auswaertiges-amt.de,https://www.auswaertiges-amt.de/de/service/buergerservice-faq-kontakt/kontaktformular,no
+30,EEAS StratCom / EUvsDisinfo,Gov/EU FIMI,EU lead FIMI body; FIMI Threat Report; Rapid Alert System,Partner/credibility; defines FIMI methodology (STIX/DISARM),via EEAS contact,https://euvsdisinfo.eu/about/,no
+31,Bundeszentrale fuer politische Bildung,Gov/EU FIMI,Federal civic-education agency; media-literacy/anti-disinfo tools,Grant-host/partner/credibility,presse@bpb.de,https://www.bpb.de/die-bpb/ueber-uns/service/kontakt/,yes
