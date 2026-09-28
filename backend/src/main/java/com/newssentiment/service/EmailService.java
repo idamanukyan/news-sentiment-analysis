@@ -165,7 +165,7 @@ public class EmailService {
 
         sb.append("View full report: ").append(baseUrl).append("/reports\n\n");
         sb.append("--\n");
-        sb.append("AIIM - Armenia Information Integrity Monitor\n");
+        sb.append("AIIM - AI Information Integrity Monitor\n");
 
         return sb.toString();
     }
@@ -247,7 +247,7 @@ public class EmailService {
                             <table width="100%%" cellpadding="0" cellspacing="0" style="background: #f8fafc; border-radius: 0 0 12px 12px; padding: 20px;">
                                 <tr>
                                     <td style="text-align: center; color: #64748b; font-size: 12px;">
-                                        <p style="margin: 0 0 8px;">AIIM - Armenia Information Integrity Monitor</p>
+                                        <p style="margin: 0 0 8px;">AIIM - AI Information Integrity Monitor</p>
                                         <p style="margin: 0;">
                                             <a href="%s/settings" style="color: #64748b;">Manage notification preferences</a>
                                         </p>
@@ -294,7 +294,7 @@ public class EmailService {
 
         sb.append("View in dashboard: ").append(baseUrl).append("/alerts?id=").append(alert.getId()).append("\n\n");
         sb.append("--\n");
-        sb.append("AIIM - Armenia Information Integrity Monitor\n");
+        sb.append("AIIM - AI Information Integrity Monitor\n");
 
         return sb.toString();
     }
@@ -358,7 +358,7 @@ public class EmailService {
                             <table width="100%%" cellpadding="0" cellspacing="0" style="background: #f8fafc; border-radius: 0 0 12px 12px; padding: 20px;">
                                 <tr>
                                     <td style="text-align: center; color: #64748b; font-size: 12px;">
-                                        <p style="margin: 0 0 8px;">AIIM - Armenia Information Integrity Monitor</p>
+                                        <p style="margin: 0 0 8px;">AIIM - AI Information Integrity Monitor</p>
                                         <p style="margin: 0;">
                                             <a href="%s/settings" style="color: #64748b;">Manage notification preferences</a>
                                         </p>

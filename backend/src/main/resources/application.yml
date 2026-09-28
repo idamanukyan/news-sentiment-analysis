@@ -145,7 +145,7 @@ management:
 # Info endpoint
 info:
   app:
-    name: AIIM - Armenia Information Integrity Monitor
+    name: AIIM - AI Information Integrity Monitor
     description: Election monitoring and disinformation detection platform
     version: 1.0.0
   build:

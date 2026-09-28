@@ -35,7 +35,7 @@ public class SystemHealthController {
         Map<String, Object> health = new HashMap<>();
 
         health.put("status", "UP");
-        health.put("application", "AIIM - Armenia Information Integrity Monitor");
+        health.put("application", "AIIM - AI Information Integrity Monitor");
         health.put("timestamp", Instant.now().toString());
         health.put("uptime", getUptime());
 

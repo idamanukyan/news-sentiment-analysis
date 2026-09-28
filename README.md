@@ -1,6 +1,6 @@
-# AIIM - Armenia Information Integrity Monitor
+# AIIM - AI Information Integrity Monitor
 
-A comprehensive election monitoring and disinformation detection platform for Armenia 2026 elections. Tracks narratives, analyzes sentiment, detects coordinated campaigns, and provides real-time threat alerts across Armenian, Russian, and English media sources.
+A FIMI (Foreign Information Manipulation & Interference) monitoring and narrative-intelligence platform. Detects and tracks disinformation narratives, flags coordinated campaigns, analyzes sentiment, and generates DSA-compliant reporting across multilingual media and Telegram sources. First deployed against the Russian / Armenian / English information space around the Armenia 2026 election — see [case study](docs/AIIM_Institutional_Brief.md).
 
 ## Architecture
 

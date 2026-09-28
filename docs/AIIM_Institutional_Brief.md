@@ -1,4 +1,4 @@
-# Armenia Information Integrity Monitor (AIIM)
+# AI Information Integrity Monitor (AIIM)
 
 ## Institutional Project Brief
 
@@ -27,7 +27,7 @@ The 2026 electoral cycle presents a critical window. Post-2020 political fragmen
 
 ### The Solution
 
-The **Armenia Information Integrity Monitor (AIIM)** is a purpose-built monitoring and early warning platform designed to support election observers, fact-checkers, civil society organizations, and institutional partners in detecting, analyzing, and responding to information integrity threats.
+The **AI Information Integrity Monitor (AIIM)** is a purpose-built monitoring and early warning platform designed to support election observers, fact-checkers, civil society organizations, and institutional partners in detecting, analyzing, and responding to information integrity threats.
 
 AIIM provides:
 
@@ -499,7 +499,7 @@ Organizations interested in exploring partnership are invited to:
 
 For partnership inquiries, demonstration requests, or additional information:
 
-**Armenia Information Integrity Monitor (AIIM)**
+**AI Information Integrity Monitor (AIIM)**
 
 *[Contact details to be inserted]*
 
