@@ -8,6 +8,7 @@ import httpx
 
 from ..models import Source, Article
 from ..database import get_db
+from ..utils.language import normalize_language
 
 logger = structlog.get_logger()
 
@@ -92,6 +93,8 @@ async def scrape_web_source(source: Source) -> List[Article]:
 
     article_data = extract_articles_from_html(html, source)
 
+    article_language = normalize_language(getattr(source, 'language', None))
+
     articles = []
     for data in article_data:
         article = Article(
@@ -102,6 +105,7 @@ async def scrape_web_source(source: Source) -> List[Article]:
             url=data['url'],
             published_at=data.get('published_at'),
             content_hash=compute_hash(data['content']) if data['content'] else None,
+            language=article_language,
         )
         articles.append(article)
 

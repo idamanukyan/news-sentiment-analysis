@@ -8,6 +8,7 @@ from time import mktime
 
 from ..models import Source, Article
 from ..database import get_db
+from ..utils.language import normalize_language
 
 logger = structlog.get_logger()
 
@@ -29,9 +30,13 @@ def compute_hash(content: str) -> str:
     return hashlib.sha256(content.encode('utf-8')).hexdigest()
 
 
-def fetch_rss_source_by_data(source_id: int, source_name: str, source_url: str) -> List[Article]:
+def fetch_rss_source_by_data(
+    source_id: int, source_name: str, source_url: str, source_language: Optional[str] = None
+) -> List[Article]:
     """Fetch articles from an RSS feed source using extracted data."""
     logger.info("fetching_rss", source_name=source_name, url=source_url)
+
+    article_language = normalize_language(source_language)
 
     try:
         # Use custom User-Agent to avoid being blocked
@@ -65,6 +70,7 @@ def fetch_rss_source_by_data(source_id: int, source_name: str, source_url: str) 
                 author=entry.get('author'),
                 published_at=parse_published_date(entry),
                 content_hash=compute_hash(content) if content else None,
+                language=article_language,
                 extra_data={
                     'tags': [tag.term for tag in getattr(entry, 'tags', [])] if hasattr(entry, 'tags') else []
                 }
@@ -114,14 +120,14 @@ def fetch_all_rss_sources():
         ).all()
 
         # Extract source data while session is open
-        source_data = [(s.id, s.name, s.url) for s in sources]
+        source_data = [(s.id, s.name, s.url, s.language) for s in sources]
 
     logger.info("starting_rss_fetch", source_count=len(source_data))
 
     total_saved = 0
-    for source_id, source_name, source_url in source_data:
+    for source_id, source_name, source_url, source_language in source_data:
         try:
-            articles = fetch_rss_source_by_data(source_id, source_name, source_url)
+            articles = fetch_rss_source_by_data(source_id, source_name, source_url, source_language)
             saved = save_new_articles_by_id(articles, source_id, source_name)
             total_saved += saved
         except Exception as e:
