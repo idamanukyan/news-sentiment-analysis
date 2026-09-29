@@ -17,6 +17,7 @@ def test_language_enum_values():
     assert Language.ARMENIAN.value == "ARMENIAN"
     assert Language.RUSSIAN.value == "RUSSIAN"
     assert Language.ENGLISH.value == "ENGLISH"
+    assert Language.GERMAN.value == "GERMAN"
 
 
 def test_sentiment_enum_values():

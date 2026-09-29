@@ -24,6 +24,7 @@ from telethon.errors import (
 from ..models import Article, Source
 from ..config import get_settings
 from ..database import get_db
+from ..utils.language import normalize_language
 
 logger = structlog.get_logger()
 
@@ -463,14 +464,8 @@ def convert_telegram_to_article(
     # Get source_id from message if available
     source_id = telegram_msg.get("source_id")
 
-    # Map language code
-    lang = telegram_msg.get("language", "hy")
-    if lang in ["hy", "ARMENIAN"]:
-        lang = "ARMENIAN"
-    elif lang in ["ru", "RUSSIAN"]:
-        lang = "RUSSIAN"
-    elif lang in ["en", "ENGLISH"]:
-        lang = "ENGLISH"
+    # Normalize the source/channel language to an ISO 639-1 code for tagging.
+    lang = normalize_language(telegram_msg.get("language", "hy"))
 
     # Metadata
     metadata = {
@@ -495,6 +490,7 @@ def convert_telegram_to_article(
         published_at=telegram_msg.get("date"),
         content_hash=content_hash,
         extra_data=metadata,
+        language=lang,
     )
 
 

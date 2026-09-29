@@ -19,6 +19,7 @@ class Language(enum.Enum):
     ARMENIAN = "ARMENIAN"
     RUSSIAN = "RUSSIAN"
     ENGLISH = "ENGLISH"
+    GERMAN = "GERMAN"
 
 
 class Sentiment(enum.Enum):
