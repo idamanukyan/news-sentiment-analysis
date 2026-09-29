@@ -10,8 +10,35 @@ from typing import Optional
 from functools import lru_cache
 
 import anthropic
-from langfuse import Langfuse
-from langfuse.decorators import observe, langfuse_context
+
+# Langfuse is optional observability. If it is not installed we degrade to
+# no-op shims so the scraper still runs (see settings.langfuse_enabled).
+try:
+    from langfuse import Langfuse
+    from langfuse.decorators import observe, langfuse_context
+    LANGFUSE_AVAILABLE = True
+except ImportError:  # pragma: no cover - exercised when langfuse is absent
+    Langfuse = None
+    LANGFUSE_AVAILABLE = False
+
+    def observe(*decorator_args, **decorator_kwargs):
+        """No-op stand-in for langfuse's @observe (supports bare and called use)."""
+        if len(decorator_args) == 1 and callable(decorator_args[0]) and not decorator_kwargs:
+            return decorator_args[0]
+
+        def decorator(func):
+            return func
+
+        return decorator
+
+    class _NoOpLangfuseContext:
+        def update_current_observation(self, *args, **kwargs):
+            pass
+
+        def update_current_trace(self, *args, **kwargs):
+            pass
+
+    langfuse_context = _NoOpLangfuseContext()
 
 from .config import get_settings
 
@@ -25,6 +52,10 @@ def get_langfuse() -> Optional[Langfuse]:
     Get Langfuse client instance (cached).
     Returns None if Langfuse is not configured.
     """
+    if not LANGFUSE_AVAILABLE:
+        logger.debug("langfuse_not_installed")
+        return None
+
     if not settings.langfuse_enabled:
         logger.debug("langfuse_disabled")
         return None

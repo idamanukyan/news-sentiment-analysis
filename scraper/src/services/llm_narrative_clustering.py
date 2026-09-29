@@ -27,17 +27,16 @@ from ..config import get_settings
 from ..database import get_db
 from ..budget_tracker import can_spend, add_spend
 from ..llm_client import create_message
+from ..taxonomy import VALID_TOPICS, topics_for_prompt
 
 logger = structlog.get_logger()
 settings = get_settings()
 
-# Valid topics for classification
-VALID_TOPICS = [
-    "Elections", "Foreign Policy", "Economy", "Security", "Corruption",
-    "Human Rights", "Media", "Infrastructure", "EU Relations", "Russia Relations",
-    "Armenia-Azerbaijan", "Diaspora", "Judiciary", "Health", "Education",
-    "Environment", "Culture", "Sports", "Other"
-]
+# Language-neutral: the corpus spans Armenian, Russian, English and German.
+CLASSIFY_SYSTEM_PROMPT = (
+    "You are classifying news articles by topic. "
+    "Respond with ONLY a JSON object, no other text."
+)
 
 
 def clean_text(text: str) -> str:
@@ -78,26 +77,31 @@ class LLMNarrativeClustering:
         """
         text = f"{title} {content}".lower()
 
-        # Topic keywords (includes Armenian and Russian transliterations)
+        # Topic keywords (Armenian/Russian transliterations + German for the EU-FIMI themes)
         topic_patterns = {
-            "Elections": ["ընdelays", "քdelays", " delays", "election", "vote", "ballot", "campaign", "выборы", "голосование", "кандидат"],
+            "Elections": ["ընdelays", "քdelays", " delays", "election", "vote", "ballot", "campaign", "выборы", "голосование", "кандидат", "wahl", "wähler", "stimmzettel", "wahlbetrug"],
             "Armenia-Azerbaijan": ["ադdelays", "арцах", "карабах", "азербайджан", "aliyev", "karabakh", "lachin", "corridor", "ceasefire", "armenian-azerbaijani"],
-            "Foreign Policy": ["diplomat", "embassy", "foreign", "minister", "bilateral", "treaty", "МИД", "дипломат", "арят", "посольств"],
-            "Russia Relations": ["russia", "putin", "moscow", "kremlin", "ռdelays", "russian", "россия", "путин", "москва", "кремль"],
-            "EU Relations": ["europe", "brussels", "eu", "european union", "visa", "schengen", "евросоюз", "брюссель", "европейский"],
-            "Economy": ["econom", "inflation", "gdp", "export", "import", "price", "market", "dram", "bank", "экономик", "инфляция", "рынок"],
-            "Security": ["military", "army", "defense", "weapon", "soldier", "border", "армия", "военн", "оборон", "граница", "безопасность"],
-            "Corruption": ["corruption", "bribe", "embezzl", "fraud", "laundering", "коррупц", "взятк", "хищение"],
-            "Judiciary": ["court", "judge", "trial", "verdict", "prosecutor", "justice", "суд", "судья", "приговор", "прокурор"],
-            "Health": ["health", "hospital", "doctor", "medicine", "covid", "pandemic", "здоров", "больниц", "врач", "медицин"],
-            "Education": ["school", "university", "student", "education", "teacher", "школ", "университет", "студент", "образован"],
-            "Infrastructure": ["road", "highway", "bridge", "airport", "construction", "дорог", "мост", "строительств", "инфраструктур"],
-            "Human Rights": ["human rights", "protest", "freedom", "democracy", "activist", "права человека", "протест", "свобод", "демократ"],
-            "Media": ["media", "journalist", "press", "news", "tv", "СМИ", "журналист", "пресс"],
+            "Foreign Policy": ["diplomat", "embassy", "foreign", "minister", "bilateral", "treaty", "МИД", "дипломат", "арят", "посольств", "außenpolitik", "diplomatie", "botschaft"],
+            "Russia Relations": ["russia", "putin", "moscow", "kremlin", "ռdelays", "russian", "россия", "путин", "москва", "кремль", "russland", "moskau", "kreml"],
+            "EU Relations": ["europe", "brussels", "eu", "european union", "visa", "schengen", "евросоюз", "брюссель", "европейский", "brüssel", "europäische union", "eu-kommission"],
+            "Economy": ["econom", "inflation", "gdp", "export", "import", "price", "market", "dram", "bank", "экономик", "инфляция", "рынок", "wirtschaft", "preise", "markt"],
+            "Security": ["military", "army", "weapon", "soldier", "border", "армия", "военн", "оборон", "граница", "безопасность", "sicherheit", "grenze"],
+            "Defense": ["nato", "bundeswehr", "aufrüstung", "verteidigung", "rüstung", "defense", "defence", "rearmament", "militärausgaben", "оборон"],
+            "Migration": ["migration", "flüchtling", "asyl", "einwanderung", "geflüchtete", "migrant", "refugee", "asylum", "immigration", "мигрант", "беженц"],
+            "Energy": ["energiewende", "energie", "strom", "strompreis", "gas", "kernkraft", "kraftwerk", "energy", "power grid", "electricity", "энергетик", "энергоснабжен"],
+            "Ukraine War": ["ukraine", "selenskyj", "zelensky", "kiew", "kyiv", "krieg", "war front", "донбасс", "украин", "kriegshilfe"],
+            "Sanctions": ["sanktion", "embargo", "strafmaßnahmen", "sanction", "санкц", "эмбарго"],
+            "Corruption": ["corruption", "bribe", "embezzl", "fraud", "laundering", "коррупц", "взятк", "хищение", "korruption", "bestechung", "betrug"],
+            "Judiciary": ["court", "judge", "trial", "verdict", "prosecutor", "justice", "суд", "судья", "приговор", "прокурор", "gericht", "richter", "staatsanwalt"],
+            "Health": ["health", "hospital", "doctor", "medicine", "covid", "pandemic", "здоров", "больниц", "врач", "медицин", "gesundheit", "krankenhaus"],
+            "Education": ["school", "university", "student", "education", "teacher", "школ", "университет", "студент", "образован", "schule", "universität", "bildung"],
+            "Infrastructure": ["road", "highway", "bridge", "airport", "construction", "дорог", "мост", "строительств", "инфраструктур", "autobahn", "brücke", "infrastruktur"],
+            "Human Rights": ["human rights", "protest", "freedom", "democracy", "activist", "права человека", "протест", "свобод", "демократ", "menschenrechte", "demokratie", "meinungsfreiheit"],
+            "Media": ["media", "journalist", "press", "news", "tv", "СМИ", "журналист", "пресс", "medien", "presse", "mainstream-medien", "lügenpresse"],
             "Diaspora": ["diaspora", "armenian community", "abroad", "диаспор", "сообщество"],
-            "Environment": ["environment", "climate", "pollution", "ecology", "экологи", "климат", "загрязн"],
-            "Culture": ["culture", "museum", "festival", "heritage", "art", "культур", "музей", "фестиваль", "искусств"],
-            "Sports": ["sport", "football", "team", "championship", "athlete", "спорт", "футбол", "чемпионат"],
+            "Environment": ["environment", "climate", "pollution", "ecology", "экологи", "климат", "загрязн", "umwelt", "klima", "klimaschutz"],
+            "Culture": ["culture", "museum", "festival", "heritage", "art", "культур", "музей", "фестиваль", "искусств", "kultur", "kunst"],
+            "Sports": ["sport", "football", "team", "championship", "athlete", "спорт", "футбол", "чемпионат", "fußball", "meisterschaft"],
         }
 
         # Score each topic
@@ -137,7 +141,7 @@ class LLMNarrativeClustering:
         clean_title = clean_text(title)
         clean_content = clean_text(content)[:500] if content else ""
 
-        system_prompt = "You are classifying Armenian news articles by topic. Respond with ONLY a JSON object, no other text."
+        system_prompt = CLASSIFY_SYSTEM_PROMPT
 
         user_prompt = f"""Classify this news article into exactly one primary topic and extract keywords.
 
@@ -145,7 +149,7 @@ Title: {clean_title}
 Content: {clean_content}
 
 Respond with ONLY this JSON format:
-{{"topic": "<one of: Elections, Foreign Policy, Economy, Security, Corruption, Human Rights, Media, Infrastructure, EU Relations, Russia Relations, Armenia-Azerbaijan, Diaspora, Judiciary, Health, Education, Environment, Culture, Sports, Other>",
+{{"topic": "<one of: {topics_for_prompt()}>",
 "keywords": ["<3-5 specific English keywords: names, places, policies, events — NOT generic verbs>"],
 "subtopic": "<brief 3-5 word English description of the specific story>"}}"""
 

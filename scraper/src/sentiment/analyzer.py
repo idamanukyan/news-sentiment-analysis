@@ -23,6 +23,7 @@ from ..models import Article, SentimentResult
 from ..database import get_db
 from ..budget_tracker import can_spend, add_spend, increment_stat, log_daily_report
 from ..llm_client import create_message
+from .prompts import BATCH_ANALYSIS_PROMPT, SINGLE_ANALYSIS_PROMPT
 
 logger = structlog.get_logger()
 settings = get_settings()
@@ -31,27 +32,8 @@ settings = get_settings()
 BATCH_SIZE = 5  # Process 5 articles per API call
 MAX_CONTENT_LENGTH = 1500  # Max chars per article (saves ~50-70% tokens on long articles)
 
-# Optimized batch prompt (~50 tokens system overhead instead of 200-500)
-BATCH_ANALYSIS_PROMPT = """Analyze these articles. For each:
-1. Detect language (hy/ru/en)
-2. Translate title to English
-3. Write 1-sentence English summary
-4. Sentiment: POSITIVE/NEGATIVE/NEUTRAL with score -1.0 to 1.0
-5. Extract 3-5 English keywords
-6. Topic: Elections/Foreign Policy/Economy/Security/Society/Media/Corruption/Other
-
-Return ONLY valid JSON array, no explanation:
-[{{"id": <id>, "lang": "<code>", "title_en": "<title>", "summary_en": "<summary>", "sentiment": "<label>", "score": <float>, "keywords": ["k1","k2"], "topic": "<topic>"}}]
-
-Articles:
-{articles}"""
-
-# Single article fallback prompt (if batch fails)
-SINGLE_ANALYSIS_PROMPT = """Analyze this article:
-Title: {title}
-Content: {content}
-
-Return JSON: {{"lang": "hy/ru/en", "title_en": "...", "summary_en": "...", "sentiment": "POSITIVE/NEGATIVE/NEUTRAL", "score": -1.0 to 1.0, "keywords": [...], "topic": "..."}}"""
+# Prompts live in .prompts (imported above) so they can be tuned/tested without
+# importing the LLM client stack.
 
 
 def confidence_to_decimal(confidence: str) -> Decimal:
