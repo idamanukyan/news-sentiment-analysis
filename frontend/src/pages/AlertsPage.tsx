@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react'
 import { Link } from 'react-router-dom'
+import { useTranslation } from 'react-i18next'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import toast from 'react-hot-toast'
 import { alertsApi, teamApi } from '../services/api'
@@ -89,30 +90,44 @@ function StatCardSkeleton() {
 }
 
 function SeverityBadge({ severity }: { severity: string }) {
+  const { t } = useTranslation()
   const config: Record<string, { bg: string; text: string }> = {
     CRITICAL: { bg: 'bg-purple-600', text: 'text-white' },
     HIGH: { bg: 'bg-red-600', text: 'text-white' },
     MEDIUM: { bg: 'bg-amber-500', text: 'text-white' },
     LOW: { bg: 'bg-blue-500', text: 'text-white' },
   }
+  const labels: Record<string, string> = {
+    CRITICAL: t('alerts.severity.critical'),
+    HIGH: t('alerts.severity.high'),
+    MEDIUM: t('alerts.severity.medium'),
+    LOW: t('alerts.severity.low'),
+  }
   const { bg, text } = config[severity] || { bg: 'bg-gray-500', text: 'text-white' }
   return (
     <span className={`px-2 py-0.5 text-xs font-bold rounded ${bg} ${text}`}>
-      {severity}
+      {labels[severity] || severity}
     </span>
   )
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation()
   const config: Record<string, string> = {
     ACTIVE: 'badge-red',
     ACKNOWLEDGED: 'badge-yellow',
     RESOLVED: 'badge-green',
     DISMISSED: 'badge-gray',
   }
+  const labels: Record<string, string> = {
+    ACTIVE: t('alertsPage.statusActive'),
+    ACKNOWLEDGED: t('alertsPage.statusAcknowledged'),
+    RESOLVED: t('alertsPage.statusResolved'),
+    DISMISSED: t('alertsPage.statusDismissed'),
+  }
   return (
     <span className={`badge ${config[status] || 'badge-gray'}`}>
-      {status}
+      {labels[status] || status}
     </span>
   )
 }
@@ -133,20 +148,26 @@ function AlertTypeIcon({ type }: { type: string }) {
   )
 }
 
-function formatTime(isoString: string) {
+function formatTime(isoString: string, t: (key: string, options?: Record<string, unknown>) => string) {
   const date = new Date(isoString)
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
   const diffDays = Math.floor(diffHours / 24)
 
-  if (diffHours < 1) return 'Just now'
-  if (diffHours < 24) return `${diffHours}h ago`
-  if (diffDays === 1) return 'Yesterday'
+  if (diffHours < 1) return t('alertsPage.justNow')
+  if (diffHours < 24) return t('alertsPage.hoursAgo', { count: diffHours })
+  if (diffDays === 1) return t('alertsPage.yesterday')
   return date.toLocaleDateString()
 }
 
 export default function AlertsPage() {
+  const { t } = useTranslation()
+  const priorityLabelKeys: Record<number, string> = {
+    0: 'alertsPage.priorityNormal',
+    1: 'alertsPage.priorityHigh',
+    2: 'alertsPage.priorityUrgent',
+  }
   const [filter, setFilter] = useState<'all' | 'active' | 'resolved'>('all')
   const [assignmentFilter, setAssignmentFilter] = useState<'all' | 'mine' | 'unassigned'>('all')
   const [selectedAlert, setSelectedAlert] = useState<Alert | null>(null)
@@ -200,7 +221,7 @@ export default function AlertsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['alerts'] })
       queryClient.invalidateQueries({ queryKey: ['alert-stats'] })
-      toast.success('Alert acknowledged')
+      toast.success(t('alertsPage.toastAlertAcknowledged'))
     },
   })
 
@@ -209,7 +230,7 @@ export default function AlertsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['alerts'] })
       queryClient.invalidateQueries({ queryKey: ['alert-stats'] })
-      toast.success('Alert resolved')
+      toast.success(t('alertsPage.toastAlertResolved'))
     },
   })
 
@@ -219,7 +240,7 @@ export default function AlertsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['alerts'] })
       setAssigningAlertId(null)
-      toast.success('Alert assigned')
+      toast.success(t('alertsPage.toastAlertAssigned'))
     },
   })
 
@@ -231,7 +252,7 @@ export default function AlertsPage() {
       queryClient.invalidateQueries({ queryKey: ['alert-stats'] })
       setSelectedIds(new Set())
       setSelectMode(false)
-      toast.success(`${res.data.acknowledged} alerts acknowledged`)
+      toast.success(t('alertsPage.toastAlertsAcknowledged', { count: res.data.acknowledged }))
     },
   })
 
@@ -242,7 +263,7 @@ export default function AlertsPage() {
       queryClient.invalidateQueries({ queryKey: ['alert-stats'] })
       setSelectedIds(new Set())
       setSelectMode(false)
-      toast.success(`${res.data.resolved} alerts resolved`)
+      toast.success(t('alertsPage.toastAlertsResolved', { count: res.data.resolved }))
     },
   })
 
@@ -253,7 +274,7 @@ export default function AlertsPage() {
       queryClient.invalidateQueries({ queryKey: ['alert-stats'] })
       setSelectedIds(new Set())
       setSelectMode(false)
-      toast.success(`${res.data.dismissed} alerts dismissed`)
+      toast.success(t('alertsPage.toastAlertsDismissed', { count: res.data.dismissed }))
     },
   })
 
@@ -283,7 +304,7 @@ export default function AlertsPage() {
       alertsApi.updateNotes(id, notes),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['alerts'] })
-      toast.success('Notes updated')
+      toast.success(t('alertsPage.toastNotesUpdated'))
     },
   })
   void _notesMutation // Suppress unused warning
@@ -343,7 +364,7 @@ export default function AlertsPage() {
       {/* Real-time connection status */}
       <div className="flex items-center justify-end gap-2 text-xs text-gray-500 dark:text-gray-400">
         <span className={`w-2 h-2 rounded-full ${wsConnected ? 'bg-green-500' : 'bg-gray-400'}`} />
-        <span>{wsConnected ? 'Real-time updates active' : 'Connecting...'}</span>
+        <span>{wsConnected ? t('alertsPage.realtimeActive') : t('alertsPage.connecting')}</span>
       </div>
 
       {/* Active alert banner */}
@@ -352,14 +373,14 @@ export default function AlertsPage() {
           <div className="flex items-center gap-3">
             <span className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
             <span className="font-medium text-red-700 dark:text-red-400">
-              {activeCount} active alert{activeCount > 1 ? 's' : ''} requiring attention
+              {t('alertsPage.activeAlertsRequiringAttention', { count: activeCount })}
             </span>
           </div>
           <button
             onClick={() => setFilter('active')}
             className="text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 font-medium"
           >
-            View all
+            {t('alertsPage.viewAll')}
           </button>
         </div>
       )}
@@ -369,7 +390,7 @@ export default function AlertsPage() {
         <div className="card p-3 sm:p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs sm:text-sm text-gray-600">Active</p>
+              <p className="text-xs sm:text-sm text-gray-600">{t('alertsPage.statActive')}</p>
               <p className="text-xl sm:text-2xl font-bold text-red-600">{activeCount}</p>
             </div>
             <div className="p-2 sm:p-2.5 bg-red-100 rounded-lg">
@@ -380,7 +401,7 @@ export default function AlertsPage() {
         <div className="card p-3 sm:p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs sm:text-sm text-gray-600">Acknowledged</p>
+              <p className="text-xs sm:text-sm text-gray-600">{t('alertsPage.statAcknowledged')}</p>
               <p className="text-xl sm:text-2xl font-bold text-amber-600">{acknowledgedCount}</p>
             </div>
             <div className="p-2 sm:p-2.5 bg-amber-100 rounded-lg">
@@ -391,7 +412,7 @@ export default function AlertsPage() {
         <div className="card p-3 sm:p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs sm:text-sm text-gray-600">Resolved</p>
+              <p className="text-xs sm:text-sm text-gray-600">{t('alertsPage.statResolved')}</p>
               <p className="text-xl sm:text-2xl font-bold text-green-600">{resolvedCount}</p>
             </div>
             <div className="p-2 sm:p-2.5 bg-green-100 rounded-lg">
@@ -402,7 +423,7 @@ export default function AlertsPage() {
         <div className="card p-3 sm:p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs sm:text-sm text-gray-600">High/Critical</p>
+              <p className="text-xs sm:text-sm text-gray-600">{t('alertsPage.statHighCritical')}</p>
               <p className="text-xl sm:text-2xl font-bold text-purple-600">{highCriticalCount}</p>
             </div>
             <div className="p-2 sm:p-2.5 bg-purple-100 rounded-lg">
@@ -420,15 +441,15 @@ export default function AlertsPage() {
             onClick={() => setFilter('all')}
             className={`btn btn-sm flex-shrink-0 ${filter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
           >
-            All ({alerts.length})
+            {t('common.all')} ({alerts.length})
           </button>
           <button
             onClick={() => setFilter('active')}
             className={`btn btn-sm flex-shrink-0 ${filter === 'active' ? 'bg-red-600 text-white hover:bg-red-700' : 'btn-secondary'}`}
           >
             <Bell size={14} />
-            <span className="hidden sm:inline">Requires Action</span>
-            <span className="sm:hidden">Active</span>
+            <span className="hidden sm:inline">{t('alertsPage.requiresAction')}</span>
+            <span className="sm:hidden">{t('alertsPage.statActive')}</span>
             <span>({activeCount + acknowledgedCount})</span>
           </button>
           <button
@@ -436,7 +457,7 @@ export default function AlertsPage() {
             className={`btn btn-sm flex-shrink-0 ${filter === 'resolved' ? 'bg-green-600 text-white hover:bg-green-700' : 'btn-secondary'}`}
           >
             <CheckCircle size={14} />
-            Resolved ({resolvedCount})
+            {t('alertsPage.statResolved')} ({resolvedCount})
           </button>
         </div>
 
@@ -446,21 +467,21 @@ export default function AlertsPage() {
             onClick={() => setAssignmentFilter('all')}
             className={`btn btn-sm flex-shrink-0 ${assignmentFilter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
           >
-            All Assignments
+            {t('alertsPage.allAssignments')}
           </button>
           <button
             onClick={() => setAssignmentFilter('mine')}
             className={`btn btn-sm flex-shrink-0 ${assignmentFilter === 'mine' ? 'bg-blue-600 text-white hover:bg-blue-700' : 'btn-secondary'}`}
           >
             <User size={14} />
-            Mine ({myAlertsCount})
+            {t('alertsPage.mine')} ({myAlertsCount})
           </button>
           <button
             onClick={() => setAssignmentFilter('unassigned')}
             className={`btn btn-sm flex-shrink-0 ${assignmentFilter === 'unassigned' ? 'bg-gray-600 text-white hover:bg-gray-700' : 'btn-secondary'}`}
           >
             <UserPlus size={14} />
-            Unassigned ({unassignedCount})
+            {t('alertsPage.unassigned')} ({unassignedCount})
           </button>
 
           {/* Select mode toggle */}
@@ -473,7 +494,7 @@ export default function AlertsPage() {
             className={`btn btn-sm flex-shrink-0 ${selectMode ? 'bg-primary-600 text-white hover:bg-primary-700' : 'btn-secondary'}`}
           >
             <CheckSquare size={14} />
-            <span className="hidden sm:inline">{selectMode ? 'Cancel' : 'Select'}</span>
+            <span className="hidden sm:inline">{selectMode ? t('common.cancel') : t('alertsPage.select')}</span>
           </button>
         </div>
       </div>
@@ -495,8 +516,8 @@ export default function AlertsPage() {
               )}
               <span>
                 {selectedIds.size === 0
-                  ? 'Select all'
-                  : `${selectedIds.size} of ${filteredAlerts.length} selected`}
+                  ? t('alertsPage.selectAll')
+                  : t('alertsPage.selectedCount', { selected: selectedIds.size, total: filteredAlerts.length })}
               </span>
             </button>
           </div>
@@ -510,7 +531,7 @@ export default function AlertsPage() {
                   className="btn btn-sm bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50"
                 >
                   <Eye size={14} />
-                  <span className="hidden sm:inline">Acknowledge</span>
+                  <span className="hidden sm:inline">{t('alertsPage.acknowledge')}</span>
                 </button>
                 <button
                   onClick={() => bulkResolveMutation.mutate(Array.from(selectedIds))}
@@ -518,11 +539,11 @@ export default function AlertsPage() {
                   className="btn btn-sm bg-green-500 text-white hover:bg-green-600 disabled:opacity-50"
                 >
                   <Check size={14} />
-                  <span className="hidden sm:inline">Resolve</span>
+                  <span className="hidden sm:inline">{t('alertsPage.resolve')}</span>
                 </button>
                 <button
                   onClick={() => {
-                    if (confirm(`Dismiss ${selectedIds.size} selected alert(s)?`)) {
+                    if (confirm(t('alertsPage.confirmDismiss', { count: selectedIds.size }))) {
                       bulkDismissMutation.mutate(Array.from(selectedIds))
                     }
                   }}
@@ -530,7 +551,7 @@ export default function AlertsPage() {
                   className="btn btn-sm bg-gray-500 text-white hover:bg-gray-600 disabled:opacity-50"
                 >
                   <X size={14} />
-                  <span className="hidden sm:inline">Dismiss</span>
+                  <span className="hidden sm:inline">{t('alertsPage.dismiss')}</span>
                 </button>
               </>
             )}
@@ -598,12 +619,12 @@ export default function AlertsPage() {
                         )}
                         <span className="flex items-center gap-1">
                           <Clock size={10} />
-                          {formatTime(alert.triggeredAt)}
+                          {formatTime(alert.triggeredAt, t)}
                         </span>
                         {alert.metadata?.articles_count != null && (
                           <span className="flex items-center gap-1">
                             <FileText size={10} />
-                            {alert.metadata.articles_count as number} articles
+                            {t('alertsPage.articlesCount', { count: alert.metadata.articles_count as number })}
                           </span>
                         )}
                         {alert.assignedTo && (
@@ -614,7 +635,7 @@ export default function AlertsPage() {
                         )}
                         {alert.priority > 0 && (
                           <span className={`font-medium ${PRIORITY_OPTIONS.find(p => p.value === alert.priority)?.color}`}>
-                            {PRIORITY_OPTIONS.find(p => p.value === alert.priority)?.label}
+                            {t(priorityLabelKeys[alert.priority] || 'alertsPage.priorityNormal')}
                           </span>
                         )}
                       </div>
@@ -631,7 +652,7 @@ export default function AlertsPage() {
                           setAssigningAlertId(assigningAlertId === alert.id ? null : alert.id)
                         }}
                         className={`btn btn-sm ${alert.assignedTo ? 'btn-secondary' : 'bg-blue-500 text-white hover:bg-blue-600'}`}
-                        title="Assign"
+                        title={t('alertsPage.assign')}
                       >
                         <UserPlus size={14} />
                         <ChevronDown size={12} />
@@ -642,7 +663,7 @@ export default function AlertsPage() {
                           onClick={(e) => e.stopPropagation()}
                         >
                           <div className="p-2 border-b">
-                            <p className="text-xs font-medium text-gray-500 uppercase">Assign to</p>
+                            <p className="text-xs font-medium text-gray-500 uppercase">{t('alertsPage.assignTo')}</p>
                           </div>
                           <div className="py-1">
                             {teamMembers.map(member => (
@@ -660,7 +681,7 @@ export default function AlertsPage() {
                             ))}
                           </div>
                           <div className="p-2 border-t">
-                            <p className="text-xs font-medium text-gray-500 uppercase mb-2">Priority</p>
+                            <p className="text-xs font-medium text-gray-500 uppercase mb-2">{t('alertsPage.priority')}</p>
                             <div className="flex gap-1">
                               {PRIORITY_OPTIONS.map(opt => (
                                 <button
@@ -677,7 +698,7 @@ export default function AlertsPage() {
                                       : 'bg-gray-100 hover:bg-gray-200'
                                   } ${!alert.assignedTo ? 'opacity-50 cursor-not-allowed' : ''}`}
                                 >
-                                  {opt.label}
+                                  {t(priorityLabelKeys[opt.value] || 'alertsPage.priorityNormal')}
                                 </button>
                               ))}
                             </div>
@@ -688,7 +709,7 @@ export default function AlertsPage() {
                                 onClick={() => assignMutation.mutate({ id: alert.id, assignedTo: '' })}
                                 className="w-full px-3 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded"
                               >
-                                Unassign
+                                {t('alertsPage.unassign')}
                               </button>
                             </div>
                           )}
@@ -703,10 +724,10 @@ export default function AlertsPage() {
                         setSelectedAlert(alert)
                       }}
                       className="btn btn-secondary btn-sm"
-                      title="Investigate"
+                      title={t('alertsPage.investigate')}
                     >
                       <Search size={14} />
-                      <span className="hidden sm:inline">Investigate</span>
+                      <span className="hidden sm:inline">{t('alertsPage.investigate')}</span>
                     </button>
 
                     {isActive && (
@@ -718,7 +739,7 @@ export default function AlertsPage() {
                           }}
                           disabled={acknowledgeMutation.isPending}
                           className="btn bg-amber-500 text-white hover:bg-amber-600 btn-sm"
-                          title="Acknowledge"
+                          title={t('alertsPage.acknowledge')}
                         >
                           <Eye size={14} />
                         </button>
@@ -729,7 +750,7 @@ export default function AlertsPage() {
                           }}
                           disabled={resolveMutation.isPending}
                           className="btn bg-green-600 text-white hover:bg-green-700 btn-sm"
-                          title="Resolve"
+                          title={t('alertsPage.resolve')}
                         >
                           <Check size={14} />
                         </button>
@@ -746,7 +767,7 @@ export default function AlertsPage() {
                         className="btn bg-green-600 text-white hover:bg-green-700 btn-sm"
                       >
                         <Check size={14} />
-                        <span className="hidden sm:inline">Resolve</span>
+                        <span className="hidden sm:inline">{t('alertsPage.resolve')}</span>
                       </button>
                     )}
                   </div>
@@ -760,10 +781,10 @@ export default function AlertsPage() {
           {filter !== 'all' ? (
             <>
               <Bell className="empty-state-icon" />
-              <p className="empty-state-title">No matching alerts</p>
-              <p className="empty-state-description">Try adjusting your filters to see more results</p>
+              <p className="empty-state-title">{t('alertsPage.noMatchingAlerts')}</p>
+              <p className="empty-state-description">{t('alertsPage.noMatchingAlertsDescription')}</p>
               <button onClick={() => setFilter('all')} className="btn btn-secondary mt-4">
-                Clear Filters
+                {t('alertsPage.clearFilters')}
               </button>
             </>
           ) : (
@@ -771,13 +792,12 @@ export default function AlertsPage() {
               <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Bell size={32} className="text-green-600 dark:text-green-400" />
               </div>
-              <p className="empty-state-title">All clear!</p>
+              <p className="empty-state-title">{t('alertsPage.allClear')}</p>
               <p className="empty-state-description max-w-md mx-auto">
-                No active alerts at this time. Alerts are automatically triggered when narratives show unusual spikes,
-                reach threat thresholds, or require attention.
+                {t('alertsPage.allClearDescription')}
               </p>
               <Link to="/narratives" className="btn btn-primary mt-4">
-                View Narratives
+                {t('alertsPage.viewNarratives')}
               </Link>
             </div>
           )}

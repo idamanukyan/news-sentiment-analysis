@@ -517,6 +517,16 @@ function LanguageToggle() {
       >
         {t('languageSwitch.hy')}
       </button>
+      <button
+        onClick={() => setLanguage('de')}
+        className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
+          language === 'de'
+            ? 'bg-blue-600 text-white'
+            : 'bg-sidebar-hover text-sidebar-text/60 hover:text-sidebar-text hover:bg-sidebar-active'
+        }`}
+      >
+        {t('languageSwitch.de')}
+      </button>
     </div>
   )
 }
