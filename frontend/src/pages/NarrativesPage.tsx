@@ -158,6 +158,7 @@ function ThreatBadge({ level }: { level: string }) {
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useTranslation()
   const config: Record<string, string> = {
     ACTIVE: 'badge-green',
     MONITORING: 'badge-yellow',
@@ -165,7 +166,7 @@ function StatusBadge({ status }: { status: string }) {
     ARCHIVED: 'badge-gray',
     PENDING_REVIEW: 'bg-amber-100 text-amber-700',
   }
-  const displayName = status === 'PENDING_REVIEW' ? 'Pending Review' : status
+  const displayName = status === 'PENDING_REVIEW' ? t('narratives.pendingReview') : status
   return (
     <span className={`badge ${config[status] || 'badge-gray'}`}>
       {displayName}
@@ -203,6 +204,7 @@ function SourceTypeBadge({ sourceType }: { sourceType?: string }) {
 }
 
 function SentimentDot({ sentiment }: { sentiment?: string }) {
+  const { t } = useTranslation()
   const colors: Record<string, string> = {
     POSITIVE: 'bg-green-500',
     NEGATIVE: 'bg-red-500',
@@ -211,7 +213,7 @@ function SentimentDot({ sentiment }: { sentiment?: string }) {
   return (
     <span
       className={`inline-block w-2 h-2 rounded-full ${colors[sentiment || ''] || 'bg-gray-300'}`}
-      title={sentiment || 'Unknown'}
+      title={sentiment || t('narratives.unknown')}
     />
   )
 }
@@ -234,7 +236,7 @@ function formatRelativeTime(dateString: string): string {
 }
 
 export default function NarrativesPage() {
-  useTranslation() // Initialize for future use
+  const { t } = useTranslation()
   const canEditNarratives = useAuthStore((state) => state.canEditNarratives)
   const canEdit = canEditNarratives()
   const queryClient = useQueryClient()
@@ -303,10 +305,10 @@ export default function NarrativesPage() {
         delete next[id]
         return next
       })
-      toast.success('Narrative approved and added to feed')
+      toast.success(t('narratives.narrativeApproved'))
     },
     onError: () => {
-      toast.error('Failed to approve narrative')
+      toast.error(t('narratives.approveFailed'))
     },
   })
 
@@ -317,10 +319,10 @@ export default function NarrativesPage() {
       queryClient.invalidateQueries({ queryKey: ['narratives'] })
       queryClient.invalidateQueries({ queryKey: ['narratives-pending'] })
       queryClient.invalidateQueries({ queryKey: ['narratives-pending-count'] })
-      toast.success('Narrative dismissed')
+      toast.success(t('narratives.narrativeDismissed'))
     },
     onError: () => {
-      toast.error('Failed to delete narrative')
+      toast.error(t('narratives.deleteFailed'))
     },
   })
 
@@ -381,10 +383,10 @@ export default function NarrativesPage() {
             </div>
             <div>
               <p className="font-medium text-amber-800">
-                {pendingCount} AI-suggested narrative{pendingCount !== 1 ? 's' : ''} pending review
+                {t('narratives.aiSuggestedPending', { count: pendingCount, s: pendingCount !== 1 ? 's' : '' })}
               </p>
               <p className="text-sm text-amber-600">
-                Review and approve or dismiss auto-detected narratives
+                {t('narratives.reviewAndApprove')}
               </p>
             </div>
           </div>
@@ -392,7 +394,7 @@ export default function NarrativesPage() {
             onClick={() => setViewMode('pending')}
             className="btn btn-sm bg-amber-600 text-white hover:bg-amber-700"
           >
-            Review Now
+            {t('narratives.reviewNow')}
           </button>
         </div>
       )}
@@ -402,7 +404,7 @@ export default function NarrativesPage() {
         <div className="card p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total Narratives</p>
+              <p className="text-sm text-gray-600">{t('narratives.totalNarratives')}</p>
               <p className="text-2xl font-bold text-gray-900">{narratives.length}</p>
             </div>
             <div className="p-2.5 bg-gray-100 rounded-lg">
@@ -413,7 +415,7 @@ export default function NarrativesPage() {
         <div className="card p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Active</p>
+              <p className="text-sm text-gray-600">{t('narratives.active')}</p>
               <p className="text-2xl font-bold text-green-600">{activeCount}</p>
             </div>
             <div className="p-2.5 bg-green-100 rounded-lg">
@@ -424,7 +426,7 @@ export default function NarrativesPage() {
         <div className="card p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">High Threat</p>
+              <p className="text-sm text-gray-600">{t('narratives.highThreat')}</p>
               <p className="text-2xl font-bold text-red-600">{highThreatCount}</p>
             </div>
             <div className="p-2.5 bg-red-100 rounded-lg">
@@ -435,7 +437,7 @@ export default function NarrativesPage() {
         <div className="card p-4">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total Articles</p>
+              <p className="text-sm text-gray-600">{t('narratives.totalArticles')}</p>
               <p className="text-2xl font-bold text-gray-900">{totalArticles.toLocaleString()}</p>
             </div>
             <div className="p-2.5 bg-blue-100 rounded-lg">
@@ -456,7 +458,7 @@ export default function NarrativesPage() {
           }`}
         >
           <Activity size={16} />
-          Active Narratives
+          {t('narratives.activeNarratives')}
         </button>
         <button
           onClick={() => setViewMode('pending')}
@@ -467,7 +469,7 @@ export default function NarrativesPage() {
           }`}
         >
           <Bot size={16} />
-          Pending Review
+          {t('narratives.pendingReview')}
           {pendingCount > 0 && (
             <span className="px-2 py-0.5 bg-amber-500 text-white text-xs rounded-full">
               {pendingCount}
@@ -483,21 +485,21 @@ export default function NarrativesPage() {
             onClick={() => setOwnershipFilter('all')}
             className={`btn btn-sm ${ownershipFilter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
           >
-            All Narratives
+            {t('narratives.allNarratives')}
           </button>
           <button
             onClick={() => setOwnershipFilter('mine')}
             className={`btn btn-sm ${ownershipFilter === 'mine' ? 'btn-primary' : 'btn-secondary'}`}
           >
             <User size={14} />
-            My Narratives
+            {t('narratives.myNarratives')}
           </button>
           <button
             onClick={() => setOwnershipFilter('shared')}
             className={`btn btn-sm ${ownershipFilter === 'shared' ? 'btn-primary' : 'btn-secondary'}`}
           >
             <Share2 size={14} />
-            Shared with Me
+            {t('narratives.sharedWithMe')}
           </button>
         </div>
       )}
@@ -510,25 +512,25 @@ export default function NarrativesPage() {
               onClick={() => setFilter('all')}
               className={`btn btn-sm ${filter === 'all' ? 'btn-primary' : 'btn-secondary'}`}
             >
-              All ({narratives.length})
+              {t('common.all')} ({narratives.length})
             </button>
             <button
               onClick={() => setFilter('active')}
               className={`btn btn-sm ${filter === 'active' ? 'btn-primary' : 'btn-secondary'}`}
             >
-              Active ({activeCount})
+              {t('narratives.active')} ({activeCount})
             </button>
             <button
               onClick={() => setFilter('high')}
               className={`btn btn-sm ${filter === 'high' ? 'bg-red-600 text-white hover:bg-red-700' : 'btn-secondary'}`}
             >
               <AlertTriangle size={14} />
-              High Threat ({highThreatCount})
+              {t('narratives.highThreat')} ({highThreatCount})
             </button>
           </div>
         ) : (
           <div className="text-sm text-gray-600">
-            AI-suggested narratives awaiting your review
+            {t('narratives.awaitingReview')}
           </div>
         )}
 
@@ -538,7 +540,7 @@ export default function NarrativesPage() {
             className="btn btn-primary"
           >
             <Plus size={16} />
-            Add Narrative
+            {t('narratives.addNarrative')}
           </button>
         )}
       </div>
@@ -567,7 +569,7 @@ export default function NarrativesPage() {
                   <div className="flex items-center gap-1.5 mb-2">
                     <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded flex items-center gap-1">
                       <Bot size={10} />
-                      AI Suggested
+                      {t('narratives.aiSuggested')}
                     </span>
                   </div>
                 )}
@@ -584,7 +586,7 @@ export default function NarrativesPage() {
                       }}
                       onClick={(e) => e.stopPropagation()}
                       className="flex-1 mr-2 px-2 py-1 text-base font-semibold text-gray-900 border border-amber-300 rounded focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
-                      placeholder="Narrative title..."
+                      placeholder={t('narratives.narrativeTitlePlaceholder')}
                     />
                   ) : (
                     <h3 className="text-base font-semibold text-gray-900 line-clamp-2 flex-1 mr-2">
@@ -601,19 +603,19 @@ export default function NarrativesPage() {
                     {narrative.isOwner && (
                       <span className="px-2 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded flex items-center gap-1">
                         <User size={10} />
-                        Owner
+                        {t('narratives.owner')}
                       </span>
                     )}
                     {narrative.isShared && !narrative.isOwner && (
                       <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs font-medium rounded flex items-center gap-1">
                         <Share2 size={10} />
-                        Shared with you
+                        {t('narratives.sharedWithYou')}
                       </span>
                     )}
                     {narrative.isOwner && narrative.sharedWith && narrative.sharedWith.length > 0 && (
                       <span className="px-2 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded flex items-center gap-1">
                         <Users size={10} />
-                        Shared ({narrative.sharedWith.length})
+                        {t('narratives.shared')} ({narrative.sharedWith.length})
                       </span>
                     )}
                   </div>
@@ -624,19 +626,19 @@ export default function NarrativesPage() {
                   <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-sm">
                     <div className="flex items-center gap-2 mb-2">
                       <Bot size={14} className="text-amber-600" />
-                      <span className="font-medium text-amber-800">AI Analysis</span>
+                      <span className="font-medium text-amber-800">{t('narratives.aiAnalysis')}</span>
                       <ThreatSignalBadge signal={narrative.aiSummary.threat_signal} />
                     </div>
                     <div className="space-y-1.5 text-gray-700">
-                      <p><span className="font-medium">Why detected:</span> {narrative.aiSummary.why_detected}</p>
-                      <p><span className="font-medium">Spread:</span> {narrative.aiSummary.spread_pattern}</p>
+                      <p><span className="font-medium">{t('narratives.whyDetectedLabel')}</span> {narrative.aiSummary.why_detected}</p>
+                      <p><span className="font-medium">{t('narratives.spreadLabel')}</span> {narrative.aiSummary.spread_pattern}</p>
                       <p className="italic text-gray-600">{narrative.aiSummary.analyst_note}</p>
                     </div>
                   </div>
                 ) : isPending && !narrative.aiSummary ? (
                   <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-4 text-sm text-gray-500 flex items-center gap-2">
                     <Bot size={14} />
-                    AI analysis unavailable
+                    {t('narratives.aiAnalysisUnavailable')}
                   </div>
                 ) : null}
 
@@ -660,17 +662,17 @@ export default function NarrativesPage() {
                 {/* Stats */}
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-gray-600">
-                    <span className="font-semibold text-gray-900">{narrative.articleCount || 0}</span> articles
+                    <span className="font-semibold text-gray-900">{narrative.articleCount || 0}</span> {t('common.articles')}
                   </span>
                   <div className="flex items-center gap-3">
                     {narrative.hasFactChecks && (
-                      <span className="text-green-600 font-medium flex items-center gap-1" title="Has fact-checks">
+                      <span className="text-green-600 font-medium flex items-center gap-1" title={t('narratives.hasFactChecks')}>
                         <Shield size={12} />
-                        Fact-checked
+                        {t('narratives.factChecked')}
                       </span>
                     )}
                     {narrative.hasCoordinationEvents && (
-                      <span className="text-purple-600 font-medium flex items-center gap-1" title="Coordinated activity detected">
+                      <span className="text-purple-600 font-medium flex items-center gap-1" title={t('narratives.coordinatedActivityDetected')}>
                         <Network size={12} />
                         {narrative.coordinationEventCount}
                       </span>
@@ -686,7 +688,7 @@ export default function NarrativesPage() {
                 <div className="flex items-center justify-between mt-2">
                   <p className="text-xs text-gray-500 flex items-center gap-1">
                     <Clock size={10} />
-                    First detected {formatDate(narrative.firstSeen)}
+                    {t('narratives.firstDetected')} {formatDate(narrative.firstSeen)}
                   </p>
                   {/* Share button for owners */}
                   {!isPending && narrative.isOwner && canEdit && (
@@ -697,10 +699,10 @@ export default function NarrativesPage() {
                         setShowShareModal(true)
                       }}
                       className="btn btn-sm btn-secondary flex items-center gap-1 text-xs py-1 px-2"
-                      title="Share narrative"
+                      title={t('narratives.shareNarrative')}
                     >
                       <Share2 size={12} />
-                      Share
+                      {t('narratives.share')}
                     </button>
                   )}
                 </div>
@@ -718,12 +720,12 @@ export default function NarrativesPage() {
                       className="flex-1 btn btn-sm bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
                     >
                       <Check size={14} />
-                      Approve
+                      {t('narratives.approve')}
                     </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation()
-                        if (confirm('Dismiss this AI-suggested narrative?')) {
+                        if (confirm(t('narratives.dismissConfirm'))) {
                           deleteMutation.mutate(narrative.id)
                         }
                       }}
@@ -731,7 +733,7 @@ export default function NarrativesPage() {
                       className="flex-1 btn btn-sm bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
                     >
                       <Trash2 size={14} />
-                      Dismiss
+                      {t('narratives.dismiss')}
                     </button>
                   </div>
                 )}
@@ -746,21 +748,21 @@ export default function NarrativesPage() {
               <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CheckCircle size={32} className="text-green-600" />
               </div>
-              <p className="empty-state-title">All caught up!</p>
+              <p className="empty-state-title">{t('narratives.allCaughtUp')}</p>
               <p className="empty-state-description max-w-md mx-auto">
-                No AI-suggested narratives pending review. New narratives will appear here when detected.
+                {t('narratives.noPendingNarratives')}
               </p>
               <button onClick={() => setViewMode('active')} className="btn btn-secondary mt-4">
-                View Active Narratives
+                {t('narratives.viewActiveNarratives')}
               </button>
             </div>
           ) : filter !== 'all' ? (
             <>
               <MessageSquare className="empty-state-icon" />
-              <p className="empty-state-title">No matching narratives</p>
-              <p className="empty-state-description">Try adjusting your filters to see more results</p>
+              <p className="empty-state-title">{t('narratives.noMatchingNarratives')}</p>
+              <p className="empty-state-description">{t('narratives.adjustFilters')}</p>
               <button onClick={() => setFilter('all')} className="btn btn-secondary mt-4">
-                Clear Filters
+                {t('narratives.clearFilters')}
               </button>
             </>
           ) : (
@@ -768,15 +770,14 @@ export default function NarrativesPage() {
               <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <MessageSquare size={32} className="text-purple-600" />
               </div>
-              <p className="empty-state-title">No narratives yet</p>
+              <p className="empty-state-title">{t('narratives.noNarrativesYet')}</p>
               <p className="empty-state-description max-w-md mx-auto">
-                Narratives help you track disinformation campaigns by monitoring keyword patterns across news sources.
-                Create your first narrative to start monitoring.
+                {t('narratives.noNarrativesDesc')}
               </p>
               {canEdit && (
                 <button onClick={() => setShowCreateModal(true)} className="btn btn-primary mt-4">
                   <Plus size={16} />
-                  Create First Narrative
+                  {t('narratives.createFirstNarrative')}
                 </button>
               )}
             </div>
@@ -812,7 +813,7 @@ export default function NarrativesPage() {
             setPendingDetailNarrative(null)
           }}
           onDismiss={() => {
-            if (confirm('Dismiss this AI-suggested narrative?')) {
+            if (confirm(t('narratives.dismissConfirm'))) {
               deleteMutation.mutate(pendingDetailNarrative.id)
               setPendingDetailNarrative(null)
             }
@@ -851,6 +852,7 @@ function NarrativeDetailPanel({
   narrative: Narrative
   onClose: () => void
 }) {
+  const { t } = useTranslation()
   const canEditNarratives = useAuthStore((state) => state.canEditNarratives)
   const canEdit = canEditNarratives()
   const queryClient = useQueryClient()
@@ -886,7 +888,7 @@ function NarrativeDetailPanel({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['narrative-fact-checks', narrative.id] })
       queryClient.invalidateQueries({ queryKey: ['narratives'] })
-      toast.success('Fact-check removed')
+      toast.success(t('narratives.factCheckRemoved'))
     },
   })
 
@@ -895,7 +897,7 @@ function NarrativeDetailPanel({
   const sourcesBreakdown = useMemo(() => {
     const sourceMap = new Map<string, { count: number; type: string; sentiments: string[] }>()
     articles.forEach((article) => {
-      const name = article.sourceName || 'Unknown'
+      const name = article.sourceName || t('narratives.unknown')
       const existing = sourceMap.get(name) || { count: 0, type: article.sourceType, sentiments: [] }
       existing.count++
       if (article.sentiment) existing.sentiments.push(article.sentiment)
@@ -909,7 +911,7 @@ function NarrativeDetailPanel({
         dominantSentiment: getDominantSentiment(data.sentiments),
       }))
       .sort((a, b) => b.count - a.count)
-  }, [articles])
+  }, [articles, t])
 
   const sentimentBreakdown = useMemo(() => {
     const counts = { POSITIVE: 0, NEGATIVE: 0, NEUTRAL: 0, UNKNOWN: 0 }
@@ -965,25 +967,25 @@ function NarrativeDetailPanel({
         <div className="px-6 py-4 border-b bg-white grid grid-cols-2 md:grid-cols-4 gap-4">
           <div>
             <p className="text-xs text-gray-600 uppercase tracking-wide flex items-center gap-1">
-              <Clock size={10} /> First Detected
+              <Clock size={10} /> {t('narratives.firstDetectedLabel')}
             </p>
             <p className="font-semibold text-gray-900">{formatDate(narrative.firstSeen)}</p>
           </div>
           <div>
             <p className="text-xs text-gray-600 uppercase tracking-wide flex items-center gap-1">
-              <TrendingUp size={10} /> Last Activity
+              <TrendingUp size={10} /> {t('narratives.lastActivity')}
             </p>
             <p className="font-semibold text-gray-900">{formatDate(narrative.lastSeen)}</p>
           </div>
           <div>
             <p className="text-xs text-gray-600 uppercase tracking-wide flex items-center gap-1">
-              <FileText size={10} /> Total Items
+              <FileText size={10} /> {t('narratives.totalItems')}
             </p>
             <p className="font-semibold text-gray-900">{articles.length}</p>
           </div>
           <div>
             <p className="text-xs text-gray-600 uppercase tracking-wide flex items-center gap-1">
-              <Users size={10} /> Sources
+              <Users size={10} /> {t('narratives.sources')}
             </p>
             <p className="font-semibold text-gray-900">{sourcesBreakdown.length}</p>
           </div>
@@ -991,7 +993,7 @@ function NarrativeDetailPanel({
 
         {/* Keywords */}
         <div className="px-6 py-3 border-b bg-gray-50">
-          <p className="text-xs text-gray-600 uppercase tracking-wide mb-2">Keywords</p>
+          <p className="text-xs text-gray-600 uppercase tracking-wide mb-2">{t('narratives.keywords')}</p>
           <div className="flex flex-wrap gap-2">
             {(narrative.keywords || []).map((kw) => (
               <span
@@ -1006,7 +1008,7 @@ function NarrativeDetailPanel({
 
         {/* Sentiment Breakdown */}
         <div className="px-6 py-4 border-b">
-          <p className="text-xs text-gray-600 uppercase tracking-wide mb-3">Sentiment Distribution</p>
+          <p className="text-xs text-gray-600 uppercase tracking-wide mb-3">{t('narratives.sentimentDistribution')}</p>
           <div className="flex items-center gap-4">
             <div className="flex-1">
               <div className="h-2.5 rounded-full bg-gray-200 overflow-hidden flex">
@@ -1043,7 +1045,7 @@ function NarrativeDetailPanel({
                   : 'border-transparent text-gray-600 hover:text-gray-700'
               }`}
             >
-              Timeline ({articles.length})
+              {t('narratives.timeline')} ({articles.length})
             </button>
             <button
               onClick={() => setActiveTab('sources')}
@@ -1053,7 +1055,7 @@ function NarrativeDetailPanel({
                   : 'border-transparent text-gray-600 hover:text-gray-700'
               }`}
             >
-              Sources ({sourcesBreakdown.length})
+              {t('narratives.sources')} ({sourcesBreakdown.length})
             </button>
             <button
               onClick={() => setActiveTab('coordination')}
@@ -1064,7 +1066,7 @@ function NarrativeDetailPanel({
               }`}
             >
               <Network size={14} />
-              Coordination ({coordinationEvents?.length || 0})
+              {t('narratives.coordination')} ({coordinationEvents?.length || 0})
             </button>
             <button
               onClick={() => setActiveTab('factchecks')}
@@ -1075,7 +1077,7 @@ function NarrativeDetailPanel({
               }`}
             >
               <Shield size={14} />
-              Fact-Checks ({factChecks?.length || 0})
+              {t('narratives.factChecks')} ({factChecks?.length || 0})
             </button>
           </div>
         </div>
@@ -1106,7 +1108,7 @@ function NarrativeDetailPanel({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
                         <span className="text-sm font-medium text-gray-700">
-                          {article.sourceName || 'Unknown Source'}
+                          {article.sourceName || t('narratives.unknownSource')}
                         </span>
                         <SentimentDot sentiment={article.sentiment} />
                         <span className="text-xs text-gray-500">
@@ -1138,9 +1140,9 @@ function NarrativeDetailPanel({
                   <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
                     <FileText size={24} className="text-gray-400" />
                   </div>
-                  <p className="empty-state-title text-base">No articles yet</p>
+                  <p className="empty-state-title text-base">{t('narratives.noArticlesYet')}</p>
                   <p className="empty-state-description text-sm max-w-xs">
-                    Articles matching the narrative keywords will appear here as sources are scraped
+                    {t('narratives.noArticlesDesc')}
                   </p>
                 </div>
               )}
@@ -1157,14 +1159,14 @@ function NarrativeDetailPanel({
                     <div>
                       <p className="font-medium text-gray-900">{source.name}</p>
                       <p className="text-xs text-gray-600">
-                        {source.count} article{source.count !== 1 ? 's' : ''}
+                        {source.count} {source.count !== 1 ? t('common.articles') : t('common.article')}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
                     <SentimentDot sentiment={source.dominantSentiment} />
                     <span className="text-xs text-gray-600">
-                      {source.dominantSentiment?.toLowerCase() || 'mixed'}
+                      {source.dominantSentiment?.toLowerCase() || t('narratives.mixed')}
                     </span>
                   </div>
                 </div>
@@ -1174,9 +1176,9 @@ function NarrativeDetailPanel({
                   <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
                     <Users size={24} className="text-gray-400" />
                   </div>
-                  <p className="empty-state-title text-base">No source data</p>
+                  <p className="empty-state-title text-base">{t('narratives.noSourceData')}</p>
                   <p className="empty-state-description text-sm">
-                    Source breakdown will appear once articles are collected
+                    {t('narratives.noSourceDataDesc')}
                   </p>
                 </div>
               )}
@@ -1201,9 +1203,9 @@ function NarrativeDetailPanel({
                   <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
                     <Network size={24} className="text-purple-600" />
                   </div>
-                  <p className="empty-state-title text-base">No coordination detected</p>
+                  <p className="empty-state-title text-base">{t('narratives.noCoordinationDetected')}</p>
                   <p className="empty-state-description text-sm max-w-xs">
-                    Coordinated activity detection runs every 2 hours. Events will appear here if multiple sources publish similar content within a short time window.
+                    {t('narratives.noCoordinationDesc')}
                   </p>
                 </div>
               )}
@@ -1219,7 +1221,7 @@ function NarrativeDetailPanel({
                     className="btn btn-primary btn-sm"
                   >
                     <Link size={14} />
-                    Link Fact-Check
+                    {t('narratives.linkFactCheck')}
                   </button>
                 </div>
               )}
@@ -1246,9 +1248,9 @@ function NarrativeDetailPanel({
                   <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
                     <Shield size={24} className="text-green-600" />
                   </div>
-                  <p className="empty-state-title text-base">No fact-checks linked yet</p>
+                  <p className="empty-state-title text-base">{t('narratives.noFactChecksLinked')}</p>
                   <p className="empty-state-description text-sm max-w-xs">
-                    Link published fact-checks from CivilNet or other sources to provide context and debunk this narrative.
+                    {t('narratives.noFactChecksDesc')}
                   </p>
                   {canEdit && (
                     <button
@@ -1256,7 +1258,7 @@ function NarrativeDetailPanel({
                       className="btn btn-primary mt-4"
                     >
                       <Link size={14} />
-                      Link Fact-Check
+                      {t('narratives.linkFactCheck')}
                     </button>
                   )}
                 </div>
@@ -1286,14 +1288,15 @@ function NarrativeDetailPanel({
 // COORDINATION EVENT CARD
 // ============================================================================
 function CoordinationEventCard({ event }: { event: CoordinationEvent }) {
+  const { t } = useTranslation()
   const getCoordinationTypeLabel = (type: string) => {
     switch (type) {
       case 'TIMING':
-        return { label: 'Timing-based', color: 'bg-blue-100 text-blue-700' }
+        return { label: t('narratives.coordTimingBased'), color: 'bg-blue-100 text-blue-700' }
       case 'CONTENT':
-        return { label: 'Content similarity', color: 'bg-green-100 text-green-700' }
+        return { label: t('narratives.coordContentSimilarity'), color: 'bg-green-100 text-green-700' }
       case 'TIMING_AND_CONTENT':
-        return { label: 'Timing + Content', color: 'bg-purple-100 text-purple-700' }
+        return { label: t('narratives.coordTimingAndContent'), color: 'bg-purple-100 text-purple-700' }
       default:
         return { label: type, color: 'bg-gray-100 text-gray-700' }
     }
@@ -1302,11 +1305,11 @@ function CoordinationEventCard({ event }: { event: CoordinationEvent }) {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'ACTIVE':
-        return { label: 'Active', color: 'bg-red-100 text-red-700', icon: AlertTriangle }
+        return { label: t('narratives.coordStatusActive'), color: 'bg-red-100 text-red-700', icon: AlertTriangle }
       case 'REVIEWED':
-        return { label: 'Reviewed', color: 'bg-green-100 text-green-700', icon: CheckCircle }
+        return { label: t('narratives.coordStatusReviewed'), color: 'bg-green-100 text-green-700', icon: CheckCircle }
       case 'DISMISSED':
-        return { label: 'Dismissed', color: 'bg-gray-100 text-gray-600', icon: XCircle }
+        return { label: t('narratives.coordStatusDismissed'), color: 'bg-gray-100 text-gray-600', icon: XCircle }
       default:
         return { label: status, color: 'bg-gray-100 text-gray-600', icon: Activity }
     }
@@ -1344,26 +1347,26 @@ function CoordinationEventCard({ event }: { event: CoordinationEvent }) {
         <div className="flex items-center gap-1.5">
           <Users size={14} className="text-gray-500" />
           <span className="text-gray-700">
-            <span className="font-semibold">{event.sourceCount}</span> sources
+            <span className="font-semibold">{event.sourceCount}</span> {t('narratives.sourcesLower')}
           </span>
         </div>
         <div className="flex items-center gap-1.5">
           <FileText size={14} className="text-gray-500" />
           <span className="text-gray-700">
-            <span className="font-semibold">{event.articleCount}</span> articles
+            <span className="font-semibold">{event.articleCount}</span> {t('common.articles')}
           </span>
         </div>
         <div className="flex items-center gap-1.5">
           <Clock size={14} className="text-gray-500" />
           <span className="text-gray-700">
-            {event.timeWindowHours}h window
+            {t('narratives.hourWindow', { hours: event.timeWindowHours })}
           </span>
         </div>
         {event.similarityScore && (
           <div className="flex items-center gap-1.5">
             <Activity size={14} className="text-gray-500" />
             <span className="text-gray-700">
-              {Math.round(event.similarityScore * 100)}% similarity
+              {t('narratives.similarity', { pct: Math.round(event.similarityScore * 100) })}
             </span>
           </div>
         )}
@@ -1372,7 +1375,7 @@ function CoordinationEventCard({ event }: { event: CoordinationEvent }) {
       {/* Sources involved */}
       {event.sourcesInvolved && event.sourcesInvolved.length > 0 && (
         <div className="mt-3 pt-3 border-t border-gray-100">
-          <p className="text-xs text-gray-600 uppercase tracking-wide mb-2">Sources Involved</p>
+          <p className="text-xs text-gray-600 uppercase tracking-wide mb-2">{t('narratives.sourcesInvolved')}</p>
           <div className="flex flex-wrap gap-1.5">
             {event.sourcesInvolved.slice(0, 5).map((source, idx) => (
               <span
@@ -1384,7 +1387,7 @@ function CoordinationEventCard({ event }: { event: CoordinationEvent }) {
             ))}
             {event.sourcesInvolved.length > 5 && (
               <span className="px-2 py-0.5 bg-gray-100 text-gray-500 text-xs rounded">
-                +{event.sourcesInvolved.length - 5} more
+                {t('narratives.andMore', { count: event.sourcesInvolved.length - 5 })}
               </span>
             )}
           </div>
@@ -1394,7 +1397,7 @@ function CoordinationEventCard({ event }: { event: CoordinationEvent }) {
       {/* Review info */}
       {event.reviewedAt && event.reviewedByName && (
         <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
-          Reviewed by {event.reviewedByName} • {formatRelativeTime(event.reviewedAt)}
+          {t('narratives.reviewedBy', { name: event.reviewedByName })} • {formatRelativeTime(event.reviewedAt)}
         </div>
       )}
     </div>
@@ -1438,6 +1441,7 @@ function FactCheckCard({
   onDelete: () => void
   canDelete: boolean
 }) {
+  const { t } = useTranslation()
   return (
     <div className="card p-4">
       <div className="flex items-start justify-between gap-3">
@@ -1462,16 +1466,16 @@ function FactCheckCard({
           )}
           <div className="flex items-center gap-3 text-xs text-gray-500">
             {factCheck.publishedAt && (
-              <span>Published: {formatDate(factCheck.publishedAt)}</span>
+              <span>{t('narratives.published')}: {formatDate(factCheck.publishedAt)}</span>
             )}
-            <span>Added by {factCheck.addedBy}</span>
+            <span>{t('narratives.addedBy', { name: factCheck.addedBy })}</span>
           </div>
         </div>
         {canDelete && (
           <button
             onClick={onDelete}
             className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
-            title="Remove fact-check"
+            title={t('narratives.removeFactCheck')}
           >
             <Trash2 size={14} />
           </button>
@@ -1493,6 +1497,7 @@ function AddFactCheckModal({
   onClose: () => void
   onSuccess: () => void
 }) {
+  const { t } = useTranslation()
   const [formData, setFormData] = useState({
     url: '',
     title: '',
@@ -1514,11 +1519,11 @@ function AddFactCheckModal({
       return res.data
     },
     onSuccess: () => {
-      toast.success('Fact-check linked successfully')
+      toast.success(t('narratives.factCheckLinked'))
       onSuccess()
     },
     onError: (err: Error) => {
-      setError(err.message || 'Failed to add fact-check')
+      setError(err.message || t('narratives.factCheckAddFailed'))
     },
   })
 
@@ -1527,11 +1532,11 @@ function AddFactCheckModal({
     setError('')
 
     if (!formData.url.trim()) {
-      setError('URL is required')
+      setError(t('narratives.urlRequired'))
       return
     }
     if (!formData.title.trim()) {
-      setError('Title is required')
+      setError(t('narratives.titleRequired'))
       return
     }
 
@@ -1548,7 +1553,7 @@ function AddFactCheckModal({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="card p-6 max-w-lg w-full animate-fade-in">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-gray-900">Link Fact-Check</h2>
+          <h2 className="text-lg font-bold text-gray-900">{t('narratives.linkFactCheck')}</h2>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
             <X size={18} className="text-gray-600" />
           </button>
@@ -1556,7 +1561,7 @@ function AddFactCheckModal({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="label">URL *</label>
+            <label className="label">{t('narratives.urlLabel')}</label>
             <input
               type="url"
               value={formData.url}
@@ -1567,19 +1572,19 @@ function AddFactCheckModal({
           </div>
 
           <div>
-            <label className="label">Title *</label>
+            <label className="label">{t('narratives.titleLabel')}</label>
             <input
               type="text"
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              placeholder="Fact-check article title"
+              placeholder={t('narratives.factCheckTitlePlaceholder')}
               className="input"
             />
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="label">Publisher</label>
+              <label className="label">{t('narratives.publisher')}</label>
               <input
                 type="text"
                 value={formData.publisher}
@@ -1589,27 +1594,27 @@ function AddFactCheckModal({
               />
             </div>
             <div>
-              <label className="label">Verdict</label>
+              <label className="label">{t('narratives.verdict')}</label>
               <select
                 value={formData.verdict}
                 onChange={(e) => setFormData({ ...formData, verdict: e.target.value })}
                 className="input"
               >
-                <option value="FALSE">False</option>
-                <option value="MISLEADING">Misleading</option>
-                <option value="PARTLY_TRUE">Partly True</option>
-                <option value="TRUE">True</option>
-                <option value="UNVERIFIED">Unverified</option>
+                <option value="FALSE">{t('narratives.verdictFalse')}</option>
+                <option value="MISLEADING">{t('narratives.verdictMisleading')}</option>
+                <option value="PARTLY_TRUE">{t('narratives.verdictPartlyTrue')}</option>
+                <option value="TRUE">{t('narratives.verdictTrue')}</option>
+                <option value="UNVERIFIED">{t('narratives.verdictUnverified')}</option>
               </select>
             </div>
           </div>
 
           <div>
-            <label className="label">Notes (optional)</label>
+            <label className="label">{t('narratives.notesOptional')}</label>
             <textarea
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="Additional context or summary..."
+              placeholder={t('narratives.notesPlaceholder')}
               rows={2}
               className="input"
             />
@@ -1624,14 +1629,14 @@ function AddFactCheckModal({
 
           <div className="flex justify-end gap-3 pt-4">
             <button type="button" onClick={onClose} className="btn btn-secondary">
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
               disabled={addMutation.isPending}
               className="btn btn-primary disabled:opacity-50"
             >
-              {addMutation.isPending ? 'Adding...' : 'Link Fact-Check'}
+              {addMutation.isPending ? t('narratives.adding') : t('narratives.linkFactCheck')}
             </button>
           </div>
         </form>
@@ -1650,6 +1655,7 @@ function CreateNarrativeModal({
   onClose: () => void
   onSuccess: () => void
 }) {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [formData, setFormData] = useState({
     name: '',
@@ -1671,11 +1677,11 @@ function CreateNarrativeModal({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['narratives'] })
-      toast.success('Narrative created successfully')
+      toast.success(t('narratives.narrativeCreated'))
       onSuccess()
     },
     onError: (err: Error) => {
-      setError(err.message || 'Failed to create narrative')
+      setError(err.message || t('narratives.createFailed'))
     },
   })
 
@@ -1684,7 +1690,7 @@ function CreateNarrativeModal({
     setError('')
 
     if (!formData.name.trim()) {
-      setError('Name is required')
+      setError(t('narratives.nameRequired'))
       return
     }
 
@@ -1694,7 +1700,7 @@ function CreateNarrativeModal({
       .filter((k) => k.length > 0)
 
     if (keywords.length === 0) {
-      setError('At least one keyword is required')
+      setError(t('narratives.keywordsRequired'))
       return
     }
 
@@ -1710,7 +1716,7 @@ function CreateNarrativeModal({
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div className="card p-6 max-w-lg w-full animate-fade-in">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-bold text-gray-900">Create New Narrative</h2>
+          <h2 className="text-lg font-bold text-gray-900">{t('narratives.createNewNarrative')}</h2>
           <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded">
             <X size={18} className="text-gray-600" />
           </button>
@@ -1718,22 +1724,22 @@ function CreateNarrativeModal({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="label">Narrative Name *</label>
+            <label className="label">{t('narratives.narrativeNameLabel')}</label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="e.g., Anti-EU Sentiment Campaign"
+              placeholder={t('narratives.narrativeNamePlaceholder')}
               className="input"
             />
           </div>
 
           <div>
-            <label className="label">Description</label>
+            <label className="label">{t('narratives.description')}</label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              placeholder="Brief description of this narrative..."
+              placeholder={t('narratives.descriptionPlaceholder')}
               rows={3}
               className="input"
             />
@@ -1741,31 +1747,31 @@ function CreateNarrativeModal({
 
           <div>
             <label className="label">
-              Keywords * <span className="text-gray-500 font-normal">(comma-separated)</span>
+              {t('narratives.keywordsLabel')} <span className="text-gray-500 font-normal">({t('narratives.keywordsComma')})</span>
             </label>
             <input
               type="text"
               value={formData.keywords}
               onChange={(e) => setFormData({ ...formData, keywords: e.target.value })}
-              placeholder="e.g., Soros, EU interference, foreign agents"
+              placeholder={t('narratives.keywordsPlaceholder')}
               className="input"
             />
             <p className="text-xs text-gray-600 mt-1">
-              Articles containing these keywords will be linked to this narrative
+              {t('narratives.keywordsHelp')}
             </p>
           </div>
 
           <div>
-            <label className="label">Initial Threat Level</label>
+            <label className="label">{t('narratives.initialThreatLevel')}</label>
             <select
               value={formData.threatLevel}
               onChange={(e) => setFormData({ ...formData, threatLevel: e.target.value })}
               className="input"
             >
-              <option value="LOW">Low</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="HIGH">High</option>
-              <option value="CRITICAL">Critical</option>
+              <option value="LOW">{t('threatLevel.low')}</option>
+              <option value="MEDIUM">{t('threatLevel.medium')}</option>
+              <option value="HIGH">{t('threatLevel.high')}</option>
+              <option value="CRITICAL">{t('threatLevel.critical')}</option>
             </select>
           </div>
 
@@ -1778,14 +1784,14 @@ function CreateNarrativeModal({
 
           <div className="flex justify-end gap-3 pt-4">
             <button type="button" onClick={onClose} className="btn btn-secondary">
-              Cancel
+              {t('common.cancel')}
             </button>
             <button
               type="submit"
               disabled={createMutation.isPending}
               className="btn btn-primary disabled:opacity-50"
             >
-              {createMutation.isPending ? 'Creating...' : 'Create Narrative'}
+              {createMutation.isPending ? t('narratives.creating') : t('narratives.createNarrative')}
             </button>
           </div>
         </form>
@@ -1816,6 +1822,7 @@ function PendingNarrativeDetailModal({
   isApproving: boolean
   isDismissing: boolean
 }) {
+  const { t } = useTranslation()
   const { data: articlesData, isLoading } = useQuery({
     queryKey: ['narrative-articles-pending', narrative.id],
     queryFn: async () => {
@@ -1839,7 +1846,7 @@ function PendingNarrativeDetailModal({
             <div className="flex items-center gap-2">
               <span className="px-2 py-0.5 bg-amber-100 text-amber-700 text-xs font-medium rounded flex items-center gap-1">
                 <Bot size={10} />
-                AI Suggested
+                {t('narratives.aiSuggested')}
               </span>
               <ThreatBadge level={narrative.threatLevel} />
               {narrative.aiSummary && (
@@ -1851,13 +1858,13 @@ function PendingNarrativeDetailModal({
             </button>
           </div>
           <div>
-            <label className="text-xs text-gray-600 uppercase tracking-wide mb-1 block">Narrative Title</label>
+            <label className="text-xs text-gray-600 uppercase tracking-wide mb-1 block">{t('narratives.narrativeTitle')}</label>
             <input
               type="text"
               value={title}
               onChange={(e) => onTitleChange(e.target.value)}
               className="w-full px-3 py-2 text-lg font-semibold text-gray-900 border border-amber-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white"
-              placeholder="Narrative title..."
+              placeholder={t('narratives.narrativeTitlePlaceholder')}
             />
           </div>
         </div>
@@ -1869,20 +1876,20 @@ function PendingNarrativeDetailModal({
             <div className="px-6 py-4 border-b bg-white">
               <div className="flex items-center gap-2 mb-3">
                 <Bot size={16} className="text-amber-600" />
-                <span className="font-semibold text-gray-800">AI Analysis</span>
+                <span className="font-semibold text-gray-800">{t('narratives.aiAnalysis')}</span>
               </div>
               <div className="space-y-3">
                 <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Why Detected</p>
-                  <p className="text-gray-700">{narrative.aiSummary.why_detected || 'Not available'}</p>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">{t('narratives.whyDetected')}</p>
+                  <p className="text-gray-700">{narrative.aiSummary.why_detected || t('narratives.notAvailable')}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Spread Pattern</p>
-                  <p className="text-gray-700">{narrative.aiSummary.spread_pattern || 'Not available'}</p>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">{t('narratives.spreadPattern')}</p>
+                  <p className="text-gray-700">{narrative.aiSummary.spread_pattern || t('narratives.notAvailable')}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Analyst Note</p>
-                  <p className="text-gray-600 italic">{narrative.aiSummary.analyst_note || 'Not available'}</p>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">{t('narratives.analystNote')}</p>
+                  <p className="text-gray-600 italic">{narrative.aiSummary.analyst_note || t('narratives.notAvailable')}</p>
                 </div>
               </div>
             </div>
@@ -1890,7 +1897,7 @@ function PendingNarrativeDetailModal({
 
           {/* Keywords */}
           <div className="px-6 py-4 border-b bg-gray-50">
-            <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Keywords</p>
+            <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">{t('narratives.keywords')}</p>
             <div className="flex flex-wrap gap-2">
               {(narrative.keywords || []).map((kw) => (
                 <span
@@ -1901,7 +1908,7 @@ function PendingNarrativeDetailModal({
                 </span>
               ))}
               {(!narrative.keywords || narrative.keywords.length === 0) && (
-                <span className="text-gray-500 text-sm">No keywords</span>
+                <span className="text-gray-500 text-sm">{t('narratives.noKeywords')}</span>
               )}
             </div>
           </div>
@@ -1909,15 +1916,15 @@ function PendingNarrativeDetailModal({
           {/* Stats */}
           <div className="px-6 py-4 border-b grid grid-cols-3 gap-4">
             <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wide">Articles</p>
+              <p className="text-xs text-gray-500 uppercase tracking-wide">{t('narratives.articlesLabel')}</p>
               <p className="text-xl font-bold text-gray-900">{narrative.articleCount || 0}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wide">First Detected</p>
+              <p className="text-xs text-gray-500 uppercase tracking-wide">{t('narratives.firstDetectedLabel')}</p>
               <p className="text-sm font-medium text-gray-900">{formatDate(narrative.firstSeen)}</p>
             </div>
             <div>
-              <p className="text-xs text-gray-500 uppercase tracking-wide">Last Seen</p>
+              <p className="text-xs text-gray-500 uppercase tracking-wide">{t('narratives.lastSeen')}</p>
               <p className="text-sm font-medium text-gray-900">{formatDate(narrative.lastSeen)}</p>
             </div>
           </div>
@@ -1925,8 +1932,8 @@ function PendingNarrativeDetailModal({
           {/* Sample Articles */}
           <div className="px-6 py-4">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs text-gray-500 uppercase tracking-wide">Sample Articles</p>
-              {isLoading && <span className="text-xs text-gray-500">Loading...</span>}
+              <p className="text-xs text-gray-500 uppercase tracking-wide">{t('narratives.sampleArticles')}</p>
+              {isLoading && <span className="text-xs text-gray-500">{t('common.loading')}</span>}
             </div>
             {articles.length > 0 ? (
               <div className="space-y-3">
@@ -1958,7 +1965,7 @@ function PendingNarrativeDetailModal({
             ) : !isLoading ? (
               <div className="text-center py-8 text-gray-500">
                 <FileText size={24} className="mx-auto mb-2 text-gray-400" />
-                <p className="text-sm">No articles found for this narrative</p>
+                <p className="text-sm">{t('narratives.noArticlesFound')}</p>
               </div>
             ) : null}
           </div>
@@ -1972,7 +1979,7 @@ function PendingNarrativeDetailModal({
             className="flex-1 btn bg-gray-200 text-gray-700 hover:bg-gray-300 disabled:opacity-50"
           >
             <Trash2 size={16} />
-            {isDismissing ? 'Dismissing...' : 'Dismiss'}
+            {isDismissing ? t('narratives.dismissing') : t('narratives.dismiss')}
           </button>
           <button
             onClick={onApprove}
@@ -1980,7 +1987,7 @@ function PendingNarrativeDetailModal({
             className="flex-1 btn bg-green-600 text-white hover:bg-green-700 disabled:opacity-50"
           >
             <Check size={16} />
-            {isApproving ? 'Approving...' : 'Approve Narrative'}
+            {isApproving ? t('narratives.approving') : t('narratives.approveNarrative')}
           </button>
         </div>
       </div>

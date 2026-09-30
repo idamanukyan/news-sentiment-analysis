@@ -6,6 +6,25 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import AlertsPage from '../pages/AlertsPage'
 import { alertsApi, teamApi } from '../services/api'
 
+// Resolve t() to real English strings (the app i18n's HTTP backend can't load under jsdom)
+vi.mock('react-i18next', () => {
+  const { readFileSync } = require('fs')
+  const { resolve } = require('path')
+  const en = JSON.parse(readFileSync(resolve(process.cwd(), 'public/locales/en/translation.json'), 'utf-8'))
+  const lookup = (k: string) => k.split('.').reduce((o: any, x) => (o && typeof o === 'object' ? o[x] : undefined), en)
+  const t = (k: string, opts?: Record<string, unknown>) => {
+    let v = lookup(k)
+    if (typeof v !== 'string') return k
+    if (opts) v = v.replace(/\{\{(\w+)\}\}/g, (_: string, n: string) => (opts[n] != null ? String(opts[n]) : `{{${n}}}`))
+    return v
+  }
+  return {
+    useTranslation: () => ({ t, i18n: { changeLanguage: () => Promise.resolve(), language: 'en' } }),
+    Trans: ({ children }: { children?: unknown }) => children,
+    initReactI18next: { type: '3rdParty', init: () => {} },
+  }
+})
+
 // Mock the api module
 vi.mock('../services/api', () => ({
   alertsApi: {
@@ -153,8 +172,8 @@ describe('AlertsPage', () => {
       renderAlertsPage()
 
       await waitFor(() => {
-        expect(screen.getByText('HIGH')).toBeTruthy()
-        expect(screen.getByText('MEDIUM')).toBeTruthy()
+        expect(screen.getByText('High')).toBeTruthy()
+        expect(screen.getByText('Medium')).toBeTruthy()
       })
     })
 
@@ -162,7 +181,7 @@ describe('AlertsPage', () => {
       renderAlertsPage()
 
       await waitFor(() => {
-        const activeBadges = screen.getAllByText('ACTIVE')
+        const activeBadges = screen.getAllByText('Active')
         expect(activeBadges.length).toBeGreaterThan(0)
       })
     })

@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { useState, useEffect, useCallback } from 'react'
+import { useTranslation } from 'react-i18next'
 import { dashboardApi, alertsApi } from '../services/api'
 import { useWebSocket } from '../hooks/useWebSocket'
 import {
@@ -129,17 +130,17 @@ function AlertBanner({ severity, title, time }: { severity: string; title: strin
   )
 }
 
-function formatTimeAgo(dateString: string): string {
+function formatTimeAgo(dateString: string, t: (key: string, options?: Record<string, unknown>) => string): string {
   const date = new Date(dateString)
   const now = new Date()
   const diffMs = now.getTime() - date.getTime()
   const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
   const diffDays = Math.floor(diffHours / 24)
 
-  if (diffHours < 1) return 'Just now'
-  if (diffHours < 24) return `${diffHours}h ago`
-  if (diffDays === 1) return 'Yesterday'
-  return `${diffDays}d ago`
+  if (diffHours < 1) return t('dashboard.justNow')
+  if (diffHours < 24) return t('dashboard.hoursAgo', { count: diffHours })
+  if (diffDays === 1) return t('dashboard.yesterday')
+  return t('dashboard.daysAgo', { count: diffDays })
 }
 
 // Armenia election date - June 2026
@@ -147,6 +148,7 @@ const ELECTION_DATE = new Date('2026-06-21T08:00:00+04:00')
 
 // Election Countdown Component
 function ElectionCountdown() {
+  const { t } = useTranslation()
   const [timeLeft, setTimeLeft] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 })
 
   useEffect(() => {
@@ -175,22 +177,22 @@ function ElectionCountdown() {
         <div className="flex items-center gap-3">
           <Calendar size={20} className="opacity-80 flex-shrink-0" />
           <div>
-            <p className="text-xs font-medium opacity-80">Election Day Countdown</p>
-            <p className="text-sm font-semibold">Parliamentary Elections 2026</p>
+            <p className="text-xs font-medium opacity-80">{t('dashboard.electionDayCountdown')}</p>
+            <p className="text-sm font-semibold">{t('dashboard.parliamentaryElections2026')}</p>
           </div>
         </div>
         <div className="flex gap-2 sm:gap-3 text-center justify-center sm:justify-end">
           <div className="bg-white/20 rounded-lg px-2 sm:px-3 py-2 min-w-[44px] sm:min-w-[50px]">
             <p className="text-lg sm:text-xl font-bold">{timeLeft.days}</p>
-            <p className="text-[9px] sm:text-[10px] opacity-80">DAYS</p>
+            <p className="text-[9px] sm:text-[10px] opacity-80">{t('dashboard.days')}</p>
           </div>
           <div className="bg-white/20 rounded-lg px-2 sm:px-3 py-2 min-w-[44px] sm:min-w-[50px]">
             <p className="text-lg sm:text-xl font-bold">{timeLeft.hours}</p>
-            <p className="text-[9px] sm:text-[10px] opacity-80">HRS</p>
+            <p className="text-[9px] sm:text-[10px] opacity-80">{t('dashboard.hrs')}</p>
           </div>
           <div className="bg-white/20 rounded-lg px-2 sm:px-3 py-2 min-w-[44px] sm:min-w-[50px]">
             <p className="text-lg sm:text-xl font-bold">{timeLeft.minutes}</p>
-            <p className="text-[9px] sm:text-[10px] opacity-80">MIN</p>
+            <p className="text-[9px] sm:text-[10px] opacity-80">{t('dashboard.min')}</p>
           </div>
         </div>
       </div>
@@ -247,6 +249,7 @@ function generateTimelineData(
 }
 
 export default function ElectionDashboard() {
+  const { t } = useTranslation()
   const queryClient = useQueryClient()
 
   // WebSocket callbacks for real-time updates
@@ -303,12 +306,12 @@ export default function ElectionDashboard() {
           {isConnected ? (
             <>
               <Wifi size={14} className="animate-pulse" />
-              Live updates active
+              {t('dashboard.liveUpdatesActive')}
             </>
           ) : (
             <>
               <WifiOff size={14} />
-              Connecting...
+              {t('dashboard.connecting')}
             </>
           )}
         </div>
@@ -409,19 +412,19 @@ export default function ElectionDashboard() {
             {isConnected ? (
               <>
                 <Wifi size={14} className="animate-pulse" />
-                <span className="hidden sm:inline">Live updates active</span>
-                <span className="sm:hidden">Live</span>
+                <span className="hidden sm:inline">{t('dashboard.liveUpdatesActive')}</span>
+                <span className="sm:hidden">{t('dashboard.live')}</span>
               </>
             ) : (
               <>
                 <WifiOff size={14} />
-                <span className="hidden sm:inline">Polling (30s)</span>
-                <span className="sm:hidden">Polling</span>
+                <span className="hidden sm:inline">{t('dashboard.polling30s')}</span>
+                <span className="sm:hidden">{t('dashboard.polling')}</span>
               </>
             )}
           </div>
           <span className="text-xs text-gray-500">
-            Updated {lastUpdated.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+            {t('dashboard.updatedAt', { time: lastUpdated.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) })}
           </span>
         </div>
         <div className="flex items-center gap-2">
@@ -430,15 +433,15 @@ export default function ElectionDashboard() {
             className="flex items-center gap-2 px-3 py-1.5 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <FileText size={14} />
-            <span className="hidden sm:inline">Generate Report</span>
-            <span className="sm:hidden">Report</span>
+            <span className="hidden sm:inline">{t('dashboard.generateReport')}</span>
+            <span className="sm:hidden">{t('dashboard.report')}</span>
           </Link>
           <button
             onClick={() => window.location.reload()}
             className="flex items-center gap-2 px-3 py-1.5 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
           >
             <RefreshCw size={14} />
-            <span className="hidden sm:inline">Refresh</span>
+            <span className="hidden sm:inline">{t('dashboard.refresh')}</span>
           </button>
         </div>
       </div>
@@ -454,7 +457,7 @@ export default function ElectionDashboard() {
               key={alert.id}
               severity={alert.severity}
               title={alert.title}
-              time={formatTimeAgo(alert.triggeredAt)}
+              time={formatTimeAgo(alert.triggeredAt, t)}
             />
           ))}
         </div>
@@ -463,42 +466,42 @@ export default function ElectionDashboard() {
       {/* Key Metrics */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard
-          title="Sources Monitored"
+          title={t('dashboard.sourcesMonitored')}
           value={stats?.totalSources || 0}
-          subtitle="News + Telegram"
+          subtitle={t('dashboard.newsPlusTelegram')}
           icon={Database}
           iconColor="text-blue-600"
           iconBg="bg-blue-100"
         />
         <StatCard
-          title="News Articles"
+          title={t('dashboard.newsArticles')}
           value={newsArticles.toLocaleString()}
-          subtitle={`${stats?.articlesToday || 0} new today`}
+          subtitle={t('dashboard.xNewToday', { count: stats?.articlesToday || 0 })}
           icon={Newspaper}
           iconColor="text-indigo-600"
           iconBg="bg-indigo-100"
         />
         <StatCard
-          title="Telegram Posts"
+          title={t('dashboard.telegramPosts')}
           value={(stats?.telegramPosts || 0).toLocaleString()}
-          subtitle="From channels"
+          subtitle={t('dashboard.fromChannels')}
           icon={Radio}
           iconColor="text-cyan-600"
           iconBg="bg-cyan-100"
         />
         <StatCard
-          title="Active Narratives"
+          title={t('dashboard.activeNarratives')}
           value={stats?.activeNarratives || 0}
-          subtitle={highThreatCount > 0 ? `${highThreatCount} high threat` : 'Monitoring'}
+          subtitle={highThreatCount > 0 ? t('dashboard.xHighThreat', { count: highThreatCount }) : t('dashboard.monitoring')}
           trend={highThreatCount > 0 ? 'up' : 'stable'}
           icon={MessageSquare}
           iconColor={highThreatCount > 0 ? 'text-amber-600' : 'text-green-600'}
           iconBg={highThreatCount > 0 ? 'bg-amber-100' : 'bg-green-100'}
         />
         <StatCard
-          title="Active Alerts"
+          title={t('dashboard.activeAlerts')}
           value={stats?.activeAlerts || 0}
-          subtitle="Requires attention"
+          subtitle={t('dashboard.requiresAttention')}
           trend={(stats?.activeAlerts || 0) > 0 ? 'up' : 'stable'}
           icon={Bell}
           iconColor={(stats?.activeAlerts || 0) > 0 ? 'text-red-600' : 'text-gray-600'}
@@ -510,13 +513,13 @@ export default function ElectionDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Threat Gauge */}
         <div className="card p-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Overall Threat Level</h2>
+          <h2 className="text-base font-semibold text-gray-900 mb-4">{t('dashboard.overallThreatLevel')}</h2>
           <ThreatGauge level={threatLevel} />
         </div>
 
         {/* Timeline Chart */}
         <div className="lg:col-span-2 card p-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Narrative Activity (7 Days)</h2>
+          <h2 className="text-base font-semibold text-gray-900 mb-4">{t('dashboard.narrativeActivity7Days')}</h2>
           <NarrativeTimelineChart data={timelineData} narratives={narrativesForChart} />
         </div>
       </div>
@@ -526,9 +529,9 @@ export default function ElectionDashboard() {
         {/* Top Narratives */}
         <div className="card p-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-base font-semibold text-gray-900">Top Narratives</h2>
+            <h2 className="text-base font-semibold text-gray-900">{t('dashboard.topNarratives')}</h2>
             <Link to="/narratives" className="text-xs text-primary-600 hover:text-primary-700 flex items-center gap-1">
-              View all <ExternalLink size={12} />
+              {t('dashboard.viewAll')} <ExternalLink size={12} />
             </Link>
           </div>
           <div className="space-y-2">
@@ -561,7 +564,7 @@ export default function ElectionDashboard() {
                         {narrative.threatLevel}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-600 mt-1 pl-4">{narrative.articleCount} articles</p>
+                    <p className="text-xs text-gray-600 mt-1 pl-4">{t('dashboard.xArticles', { count: narrative.articleCount })}</p>
                   </div>
                 )
               })
@@ -570,10 +573,10 @@ export default function ElectionDashboard() {
                 <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-3">
                   <MessageSquare size={24} className="text-gray-400" />
                 </div>
-                <p className="text-sm font-medium text-gray-900">No narratives tracked yet</p>
-                <p className="text-xs text-gray-600 mt-1 mb-4">Create narratives to monitor disinformation patterns</p>
+                <p className="text-sm font-medium text-gray-900">{t('dashboard.noNarrativesTracked')}</p>
+                <p className="text-xs text-gray-600 mt-1 mb-4">{t('dashboard.createNarrativesToMonitor')}</p>
                 <Link to="/narratives" className="btn btn-primary btn-sm">
-                  Create Narrative
+                  {t('dashboard.createNarrative')}
                 </Link>
               </div>
             )}
@@ -582,7 +585,7 @@ export default function ElectionDashboard() {
 
         {/* Sentiment Distribution */}
         <div className="card p-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Sentiment Distribution</h2>
+          <h2 className="text-base font-semibold text-gray-900 mb-4">{t('dashboard.sentimentDistribution')}</h2>
           <SentimentPieChart
             data={{
               positive: stats?.sentimentDistribution?.POSITIVE || 0,
@@ -594,7 +597,7 @@ export default function ElectionDashboard() {
 
         {/* Source Distribution */}
         <div className="card p-6">
-          <h2 className="text-base font-semibold text-gray-900 mb-4">Content by Source</h2>
+          <h2 className="text-base font-semibold text-gray-900 mb-4">{t('dashboard.contentBySource')}</h2>
           <SourcesDonutChart data={stats?.articlesBySource || {}} />
         </div>
       </div>
@@ -602,9 +605,9 @@ export default function ElectionDashboard() {
       {/* Recent Alerts Table */}
       <div className="card p-4 sm:p-6">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-base font-semibold text-gray-900">Recent Alerts</h2>
+          <h2 className="text-base font-semibold text-gray-900">{t('dashboard.recentAlerts')}</h2>
           <Link to="/alerts" className="text-xs text-primary-600 hover:text-primary-700 flex items-center gap-1">
-            View all <ExternalLink size={12} />
+            {t('dashboard.viewAll')} <ExternalLink size={12} />
           </Link>
         </div>
         {stats?.recentAlerts && stats.recentAlerts.length > 0 ? (
@@ -614,18 +617,18 @@ export default function ElectionDashboard() {
               <table className="table">
                 <thead>
                   <tr>
-                    <th>Alert</th>
-                    <th>Narrative</th>
-                    <th>Severity</th>
-                    <th>Status</th>
-                    <th>Time</th>
+                    <th>{t('dashboard.alert')}</th>
+                    <th>{t('dashboard.narrative')}</th>
+                    <th>{t('dashboard.severity')}</th>
+                    <th>{t('dashboard.status')}</th>
+                    <th>{t('dashboard.time')}</th>
                   </tr>
                 </thead>
                 <tbody>
                   {stats.recentAlerts.slice(0, 5).map((alert) => (
                     <tr key={alert.id}>
                       <td className="font-medium text-gray-900">{alert.title}</td>
-                      <td className="text-gray-600">{alert.narrativeName || 'N/A'}</td>
+                      <td className="text-gray-600">{alert.narrativeName || t('dashboard.notAvailable')}</td>
                       <td>
                         <span className={`badge ${
                           alert.severity === 'CRITICAL' ? 'bg-purple-100 text-purple-800' :
@@ -644,7 +647,7 @@ export default function ElectionDashboard() {
                           {alert.status}
                         </span>
                       </td>
-                      <td className="text-gray-600">{formatTimeAgo(alert.triggeredAt)}</td>
+                      <td className="text-gray-600">{formatTimeAgo(alert.triggeredAt, t)}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -666,7 +669,7 @@ export default function ElectionDashboard() {
                     </span>
                   </div>
                   <div className="flex items-center justify-between text-xs text-gray-600">
-                    <span>{alert.narrativeName || 'N/A'}</span>
+                    <span>{alert.narrativeName || t('dashboard.notAvailable')}</span>
                     <div className="flex items-center gap-2">
                       <span className={`badge ${
                         alert.status === 'ACTIVE' ? 'badge-red' :
@@ -675,7 +678,7 @@ export default function ElectionDashboard() {
                       }`}>
                         {alert.status}
                       </span>
-                      <span>{formatTimeAgo(alert.triggeredAt)}</span>
+                      <span>{formatTimeAgo(alert.triggeredAt, t)}</span>
                     </div>
                   </div>
                 </div>
@@ -688,12 +691,12 @@ export default function ElectionDashboard() {
               <Bell size={24} className="text-green-600 sm:hidden" />
               <Bell size={28} className="text-green-600 hidden sm:block" />
             </div>
-            <p className="text-sm font-medium text-gray-900">All clear - no recent alerts</p>
+            <p className="text-sm font-medium text-gray-900">{t('dashboard.allClearNoAlerts')}</p>
             <p className="text-xs text-gray-600 mt-1 max-w-xs mx-auto">
-              Alerts are automatically triggered when narratives show unusual activity or reach threat thresholds
+              {t('dashboard.alertsAutoTriggered')}
             </p>
             <Link to="/narratives" className="text-xs text-primary-600 hover:text-primary-700 mt-3 inline-block">
-              Configure narrative thresholds →
+              {t('dashboard.configureNarrativeThresholds')}
             </Link>
           </div>
         )}
