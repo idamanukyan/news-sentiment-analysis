@@ -1,0 +1,167 @@
+<title>AIIM — Sovereignty, Hosting &amp; GDPR Posture</title>
+<style>
+  :root{
+    --ink:#101720;--ink-2:#1b2530;--paper:#f5f6f8;--paper-2:#fff;
+    --slate:#58636f;--slate-2:#7c8792;--line:#d9dde3;--line-2:#e7eaee;
+    --signal:#d64429;--signal-ink:#a5301c;--analysis:#2f6f5f;--analysis-ink:#245445;--amber:#c6871f;--amber-ink:#8a5e14;
+    --serif:"Charter","Iowan Old Style","Palatino Linotype",Georgia,serif;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,"SF Mono","JetBrains Mono","Menlo",monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:17px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:900px;margin:0 auto;padding:0 28px}
+  h1,h2,h3{font-family:var(--serif);font-weight:600;text-wrap:balance;letter-spacing:-0.01em}
+  .eyebrow{font-family:var(--mono);font-size:12px;letter-spacing:0.16em;text-transform:uppercase;color:var(--slate-2);margin:0 0 14px;display:flex;align-items:center;gap:10px}
+  .eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--analysis);box-shadow:0 0 0 3px rgba(47,111,95,0.18);flex:none}
+
+  .hero{background:var(--ink);color:#eef1f4;border-bottom:3px solid var(--analysis);
+    background-image:linear-gradient(180deg,rgba(255,255,255,0.03),rgba(0,0,0,0.15)),repeating-linear-gradient(90deg,rgba(255,255,255,0.035) 0 1px,transparent 1px 64px)}
+  .hero .wrap{padding:60px 28px 52px}
+  .hero .eyebrow{color:#8b97a4}
+  .hero .eyebrow .dot{background:#4fb9a3;box-shadow:0 0 0 3px rgba(79,185,163,0.2)}
+  .kicker{font-family:var(--mono);font-size:13px;letter-spacing:0.24em;color:#cfd6dd;font-weight:600;margin-bottom:30px}
+  .kicker b{color:#fff}
+  h1{font-size:clamp(28px,5vw,43px);line-height:1.09;margin:0 0 20px;color:#fff}
+  h1 .hl{color:#5fcbb2}
+  .lede{font-size:clamp(17px,2.3vw,20px);color:#c3cbd3;max-width:64ch;margin:0}
+  .lede b{color:#fff;font-weight:600}
+
+  section{padding:50px 0;border-bottom:1px solid var(--line)}
+  section:last-of-type{border-bottom:none}
+  h2{font-size:clamp(23px,3.4vw,30px);margin:0 0 12px;color:var(--ink)}
+  .intro{color:var(--slate);max-width:66ch;margin:0 0 26px}
+  p{margin:0 0 16px}
+  .body{color:#2a3138;max-width:66ch}
+  .body strong{color:var(--ink)}
+
+  /* the crisp answer — status table */
+  .status{width:100%;border-collapse:collapse;background:var(--paper-2);border:1px solid var(--line);font-size:15.5px}
+  .status th{font-family:var(--mono);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--slate);text-align:left;padding:12px 18px;border-bottom:1px solid var(--line);background:#fbfcfd;font-weight:600}
+  .status td{padding:13px 18px;border-bottom:1px solid var(--line-2);vertical-align:top}
+  .status tr:last-child td{border-bottom:none}
+  .status .cap{color:var(--ink);font-weight:500}
+  .status .cap span{display:block;color:var(--slate-2);font-weight:400;font-size:13px;margin-top:2px}
+  .badge{font-family:var(--mono);font-size:11px;letter-spacing:0.05em;font-weight:700;padding:3px 9px;border-radius:3px;white-space:nowrap;text-transform:uppercase}
+  .b-now{background:rgba(47,111,95,0.12);color:var(--analysis-ink);border:1px solid rgba(47,111,95,0.3)}
+  .b-prog{background:rgba(198,135,31,0.13);color:var(--amber-ink);border:1px solid rgba(198,135,31,0.35)}
+  .b-road{background:rgba(88,99,111,0.1);color:var(--slate);border:1px solid var(--line)}
+
+  /* built-today cards */
+  .caps{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .cap-c{background:var(--paper-2);border:1px solid var(--line);border-top:2px solid var(--analysis);padding:20px 22px}
+  .cap-c .tag{font-family:var(--mono);font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:var(--analysis-ink);font-weight:600}
+  .cap-c h3{font-size:18px;margin:8px 0 7px;color:var(--ink)}
+  .cap-c p{margin:0;color:var(--slate);font-size:14.5px;line-height:1.55}
+
+  /* hosting / data flow */
+  .flow{background:var(--paper-2);border:1px solid var(--line);padding:6px 0}
+  .flow-row{display:grid;grid-template-columns:auto 1fr;gap:16px;padding:14px 20px;border-bottom:1px solid var(--line-2)}
+  .flow-row:last-child{border-bottom:none}
+  .flow-row .k{font-family:var(--mono);font-size:11px;letter-spacing:0.1em;text-transform:uppercase;font-weight:700;color:var(--analysis-ink);padding-top:2px;white-space:nowrap}
+  .flow-row p{margin:0;font-size:14.5px;color:var(--slate);line-height:1.5}
+  .flow-row p b{color:var(--ink)}
+
+  /* roadmap steps */
+  .road{background:var(--paper-2);border:1px solid var(--line)}
+  .r-h{padding:13px 20px;border-bottom:1px solid var(--line);background:#fbfcfd;font-family:var(--mono);font-size:12px;letter-spacing:0.14em;text-transform:uppercase;color:var(--slate)}
+  .r-item{display:grid;grid-template-columns:auto 1fr;gap:16px;padding:16px 20px;border-bottom:1px solid var(--line-2)}
+  .r-item:last-child{border-bottom:none}
+  .r-item .n{font-family:var(--mono);font-size:12px;color:var(--amber-ink);font-weight:700;border:1px solid rgba(198,135,31,0.35);width:26px;height:26px;display:flex;align-items:center;justify-content:center;flex:none}
+  .r-item h3{font-size:16px;margin:1px 0 3px}
+  .r-item p{margin:0;font-size:14px;color:var(--slate);line-height:1.5}
+
+  footer{background:var(--ink-2);color:#c3cbd3}
+  footer .wrap{padding:38px 28px}
+  footer h2{color:#fff}
+  footer p{color:#aeb8c1;max-width:64ch}
+  .contact{font-family:var(--mono);font-size:14px;color:#fff;margin-top:18px}
+  .contact span{color:var(--analysis)}
+  .disclaim{font-size:12.5px;color:#7c8792;margin-top:22px;border-top:1px solid rgba(255,255,255,0.1);padding-top:16px;max-width:70ch}
+
+  @media(max-width:640px){.caps{grid-template-columns:1fr}.flow-row,.r-item{grid-template-columns:1fr}body{font-size:16px}.status{font-size:14px}.status th,.status td{padding:10px 12px}}
+  @media print{body{background:#fff}.hero,footer{-webkit-print-color-adjust:exact;print-color-adjust:exact}section{padding:30px 0}}
+</style>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="kicker">AIIM · <b>AI INFORMATION INTEGRITY MONITOR</b></div>
+    <p class="eyebrow"><span class="dot"></span> Sovereignty · hosting · data protection</p>
+    <h1>Where your data lives, who can see it, and <span class="hl">how it's governed</span>.</h1>
+    <p class="lede">A straight answer for procurement and DPO review: AIIM is a <b>self-hostable, role-controlled, encrypted</b> platform with a deliberately small personal-data footprint — deployable on <b>EU infrastructure you control</b>. This note states plainly what is in place today and what is on the near-term roadmap. No claim here describes a capability that isn't built.</p>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <p class="eyebrow"><span class="dot"></span> The crisp answer</p>
+    <h2>Capability status at a glance</h2>
+    <p class="intro">The honest yes/no across the dimensions procurement usually asks about. "Available today" is enforced in the running system; "In progress" and "On roadmap" items are scoped, not shipped.</p>
+    <table class="status">
+      <thead><tr><th>Capability</th><th>Status</th></tr></thead>
+      <tbody>
+        <tr><td class="cap">Role-based access control<span>4 roles, server-enforced (Spring Security)</span></td><td><span class="badge b-now">Available today</span></td></tr>
+        <tr><td class="cap">Encrypted authentication<span>JWT sessions, BCrypt-hashed passwords, stateless</span></td><td><span class="badge b-now">Available today</span></td></tr>
+        <tr><td class="cap">Per-organisation data model<span>Multi-tenant schema, org-bound access tokens</span></td><td><span class="badge b-now">Available today</span></td></tr>
+        <tr><td class="cap">Self-host / on-premises deployment<span>Fully containerised; runs on your infrastructure</span></td><td><span class="badge b-now">Available today</span></td></tr>
+        <tr><td class="cap">Minimal personal-data footprint<span>Operator accounts only — no subject profiling</span></td><td><span class="badge b-now">By design</span></td></tr>
+        <tr><td class="cap">Tenant-isolation hardening<span>Org scoping across every query path</span></td><td><span class="badge b-prog">In progress</span></td></tr>
+        <tr><td class="cap">Immutable audit log<span>Who did what, when — tamper-evident</span></td><td><span class="badge b-road">On roadmap</span></td></tr>
+        <tr><td class="cap">Managed EU-region hosting<span>Self-host on EU infra available today</span></td><td><span class="badge b-road">On roadmap</span></td></tr>
+        <tr><td class="cap">GDPR data-subject endpoints<span>Export / erasure / access on request</span></td><td><span class="badge b-road">On roadmap</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="eyebrow"><span class="dot"></span> In place today</p>
+    <h2>What's already enforced</h2>
+    <div class="caps">
+      <div class="cap-c"><div class="tag">Access control</div><h3>Four roles, enforced server-side</h3><p>Super-admin, org-admin, analyst and viewer. Permissions are checked on the API — not just hidden in the UI — so a downgraded or forged client can't reach actions it isn't entitled to.</p></div>
+      <div class="cap-c"><div class="tag">Credentials</div><h3>Encrypted auth by default</h3><p>Passwords are BCrypt-hashed (salted). Sessions are short-lived, signed JSON Web Tokens carrying the user's organisation and role — stateless, with no server-side session store to breach.</p></div>
+      <div class="cap-c"><div class="tag">Tenancy</div><h3>Organisation-scoped by design</h3><p>Every account belongs to an organisation; core records carry an organisation key and the access token is bound to it. The multi-tenant model is the foundation isolation hardening builds on.</p></div>
+      <div class="cap-c"><div class="tag">Data minimisation</div><h3>A small personal-data surface</h3><p>The only personal data held is operator accounts — email, display name, role, last-login. No end-user tracking, no behavioural profiles, no special-category data. Less data is less risk.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="eyebrow"><span class="dot"></span> Hosting &amp; data residency</p>
+    <h2>You can run it where your rules require</h2>
+    <p class="intro">AIIM is fully containerised and configuration-driven, so it deploys onto EU-region cloud or on-premises infrastructure you control. Two points we state openly, because a DPO will ask:</p>
+    <div class="flow">
+      <div class="flow-row"><span class="k">Self-host</span><p><b>Available today.</b> Backend, frontend, database and workers ship as containers with a single compose definition — deployable to an EU-region VM or Kubernetes cluster under your control. No component requires our infrastructure.</p></div>
+      <div class="flow-row"><span class="k">Managed EU</span><p><b>On roadmap.</b> A managed EU-region hosting option is planned; until then, EU data residency is achieved via self-host on infrastructure you choose.</p></div>
+      <div class="flow-row"><span class="k">Data flows out</span><p><b>Disclosed.</b> Content analysis uses external AI services (large-language-model inference) and some sources are fetched from third-party APIs. Article/message text is sent to those providers for processing. For strict data-residency needs we scope which flows are acceptable and can discuss EU-endpoint or self-hosted-model options.</p></div>
+      <div class="flow-row"><span class="k">In transit</span><p>Deployments terminate TLS at the edge (reverse proxy / platform). Secrets are supplied via environment configuration, never hard-coded.</p></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <p class="eyebrow"><span class="dot"></span> Roadmap to full compliance</p>
+    <h2>What we're building next — and why it's honest to name it</h2>
+    <p class="intro">These are scoped and prioritised, not shipped. We'd rather a procurement team know exactly where the line is than discover it later.</p>
+    <div class="road">
+      <div class="r-h">Compliance roadmap — near term</div>
+      <div class="r-item"><div class="n">1</div><div><h3>Tenant-isolation hardening</h3><p>Extend organisation scoping to every remaining query path (global search, background detection jobs) so cross-organisation visibility is impossible by construction, not just by convention.</p></div></div>
+      <div class="r-item"><div class="n">2</div><div><h3>Immutable audit log</h3><p>A tamper-evident record of create / update / delete and access events — the basis for demonstrating data governance and supporting incident investigation.</p></div></div>
+      <div class="r-item"><div class="n">3</div><div><h3>GDPR data-subject endpoints</h3><p>Operator-facing export, rectification and erasure (soft-delete preserving the audit trail) to service data-subject requests within statutory timelines.</p></div></div>
+      <div class="r-item"><div class="n">4</div><div><h3>Managed EU-region option</h3><p>A hosted EU-region deployment for customers who prefer managed service over self-host, with a documented sub-processor list and data-flow map.</p></div></div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <p class="eyebrow" style="color:#8b97a4"><span class="dot" style="background:#4fb9a3;box-shadow:0 0 0 3px rgba(79,185,163,0.2)"></span> Next step</p>
+    <h2>A DPO-level walkthrough of the architecture</h2>
+    <p>We're happy to walk your security or data-protection team through the deployment model, the access-control implementation and the data-flow map — and to agree, in writing, which roadmap items a pilot would depend on.</p>
+    <p class="contact"><span>▸</span> demo@aiim.am &nbsp;·&nbsp; aiim.am</p>
+    <p class="disclaim">AIIM — AI Information Integrity Monitor. This note describes the platform's current architecture and a near-term roadmap; items marked "in progress" or "on roadmap" are not yet available. Independently developed FIMI-monitoring platform, deployed for the Armenia 2026 election information environment (case study). Claims describe platform capability; no audience or traffic metrics are implied.</p>
+  </div>
+</footer>

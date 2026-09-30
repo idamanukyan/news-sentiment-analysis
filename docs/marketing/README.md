@@ -14,6 +14,7 @@ Artifacts (links below); when you edit a file here, re-publish the Artifact to k
 | `onepager-prototype-fund.html` | Grant framing — open-source public-interest FIMI core | Prototype Fund reviewers | https://claude.ai/code/artifact/9e36f436-8be7-4f75-9887-26e7ef25ce51 |
 | `onepager-partner-cemas.html` | Partner framing — cross-lingual tooling for analysts, coordination methodology | CeMAS / GADMO / EDMO / researchers | https://claude.ai/code/artifact/805717cb-bde7-4abc-b46f-906b4f8203f2 |
 | `germany-sprint-plan.html` | Visual 4-sprint go-to-market plan | Internal | https://claude.ai/code/artifact/fe41cad8-c2df-4da8-9d11-54395721d52f |
+| `onepager-sovereignty-gdpr.html` | Sovereignty / hosting / GDPR posture — crisp status table (built today vs. roadmap), for procurement & DPO review | Procurement / DPO | _to be published_ |
 
 ## Positioning guardrails (keep these when editing)
 
